@@ -24,7 +24,7 @@
 # main variables
 TEMPLATE  = lib
 CONFIG	 *= qt thread warn_on @ANSI_COLOR@ @QTLINK_LEVEL@
-TARGET    = medio
+TARGET    = rtdebug
 VERSION   = 1.0
 DESTDIR   = ../lib/
 
@@ -34,7 +34,7 @@ MOC_DIR     = .moc
 UI_DIR      = .ui
 
 # define headers and source files for compilation
-# PUB_HEADER: public headers going into /usr/local/include/medio
+# PUB_HEADER: public headers going into /usr/local/include/rtdebug
 # HEADERS...: all headers including private ones
 # SOURCES...: all source files required for the compilation
 
@@ -61,11 +61,11 @@ unix {
   QMAKE_COPY_FILE = $(COPY) -P
 	
   # install header 
-  include.path  = $$INCLUDE_DIR/medio
+  include.path  = $$INCLUDE_DIR/rtdebug
   include.files = $$PUB_HEADER
 
   # install documentation html
-  documentation.path = $$DATA_DIR/medio/doc
+  documentation.path = $$DATA_DIR/rtdebug/doc
   documentation.files = ../doc/*.html ../doc/*.css
 
   # install library
