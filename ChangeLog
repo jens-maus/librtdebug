@@ -1,0 +1,11 @@
+-----------------------------------------------
+RTDebugLib - Runtime Debugging C++ Library
+-----------------------------------------------
+// vim:set ts=2 nowrap:
+
+$Id$
+$Source$
+
+2005-01-27  Jens Langner <Jens.Langner@light-speed.de>
+
+  * first internal 1.0 release

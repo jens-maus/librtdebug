@@ -1,0 +1,7 @@
+.dist
+lib
+autom4te.cache
+Makefile
+config.log
+config.status
+configure.lineno
