@@ -50,6 +50,7 @@ AC_CHECK_LIB(pthread, pthread_create)
 
 # own macros
 AC_C_BIGENDIAN
+AC_ANSI_COLOR
 
 # checking gcc version
 AC_PROG_GCC_VERSION

@@ -1,26 +1,26 @@
-#/* vim:set ts=2 nowrap: ****************************************************
-#
-# librtdebug - A C++ based thread-safe Runtime Debugging Library
-# Copyright (C) 2003-2005 by Jens Langner <Jens.Langner@light-speed.de>
-#
-# This library is free software; you can redistribute it and/or
-# modify it under the terms of the GNU Lesser General Public
-# License as published by the Free Software Foundation; either
-# version 2.1 of the License, or (at your option) any later version.
-#
-# This library is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#
-# $Id$
-#
-#***************************************************************************/
-## -*- mode: m4 -*-
+dnl/* vim:set ts=2 nowrap: ****************************************************
+dnl
+dnl librtdebug - A C++ based thread-safe Runtime Debugging Library
+dnl Copyright (C) 2003-2005 by Jens Langner <Jens.Langner@light-speed.de>
+dnl
+dnl This library is free software; you can redistribute it and/or
+dnl modify it under the terms of the GNU Lesser General Public
+dnl License as published by the Free Software Foundation; either
+dnl version 2.1 of the License, or (at your option) any later version.
+dnl
+dnl This library is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+dnl Lesser General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU Lesser General Public
+dnl License along with this library; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+dnl
+dnl $Id$
+dnl
+dnl***************************************************************************/
+dnl# -*- mode: m4 -*-
 
 dnl Autoconf Macros from gnu.org
 
@@ -56,6 +56,31 @@ if test "$ac_cv_cxx_static_cast" = yes; then
   AC_DEFINE(HAVE_STATIC_CAST,,
             [define if the compiler supports static_cast<>])
 fi
+])
+
+dnl Copyright (c) 2003 Jens Langner
+AC_DEFUN(AC_ANSI_COLOR,
+[
+	AC_MSG_CHECKING(whether ANSI color should be used for terminal output)
+	AC_ARG_ENABLE(ansi-color,
+								[AC_HELP_STRING([--disable-ansi-color], [ansi-color terminal output should be disabled [default=no]])],
+								[case "${enableval}" in
+									yes) test_on_ansi_color=yes ;;
+									no)  test_on_ansi_color=no ;;
+									*)   AC_MSG_ERROR(bad value ${enableval} for --disable-ansi-color) ;;
+								esac], 
+								[test_on_ansi_color=no])
+
+	if test "$test_on_ansi_color" = "yes"; then
+		AC_MSG_RESULT(no)
+	else
+		ANSI_COLOR="ansi_color" 
+		AC_DEFINE(WITH_ANSI_COLOR) 		
+		AC_MSG_RESULT(yes)
+	fi
+	AC_DEFINE([WITH_ANSI_COLOR], [], [Use ANSI color scheme in terminal output])
+	
+	AC_SUBST(ANSI_COLOR) 
 ])
 
 # this macro is used to get the arguments supplied

@@ -314,7 +314,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS HOST_OS HOST_CPU CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT QTLINK_LEVEL CC CFLAGS ac_ct_CC GCC_VERSION QMAKE_PATH MKDIR_PATH CP_PATH MV_PATH TAR_PATH GZIP_PATH RM_PATH CHMOD_PATH CPP EGREP LIBOBJS SET_MAKE LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS HOST_OS HOST_CPU CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT QTLINK_LEVEL CC CFLAGS ac_ct_CC ANSI_COLOR GCC_VERSION QMAKE_PATH MKDIR_PATH CP_PATH MV_PATH TAR_PATH GZIP_PATH RM_PATH CHMOD_PATH CPP EGREP LIBOBJS SET_MAKE LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -724,13 +724,13 @@ echo X"$0" |
   	  /^X\(\/\).*/{ s//\1/; q; }
   	  s/.*/./; q'`
   srcdir=$ac_confdir
-  if test ! -r $srcdir/$ac_unique_file; then
+  if test ! -r "$srcdir/$ac_unique_file"; then
     srcdir=..
   fi
 else
   ac_srcdir_defaulted=no
 fi
-if test ! -r $srcdir/$ac_unique_file; then
+if test ! -r "$srcdir/$ac_unique_file"; then
   if test "$ac_srcdir_defaulted" = yes; then
     { echo "$as_me: error: cannot find sources ($ac_unique_file) in $ac_confdir or .." >&2
    { (exit 1); exit 1; }; }
@@ -739,7 +739,7 @@ if test ! -r $srcdir/$ac_unique_file; then
    { (exit 1); exit 1; }; }
   fi
 fi
-(cd $srcdir && test -r ./$ac_unique_file) 2>/dev/null ||
+(cd $srcdir && test -r "./$ac_unique_file") 2>/dev/null ||
   { echo "$as_me: error: sources are in $srcdir, but \`cd $srcdir' does not work" >&2
    { (exit 1); exit 1; }; }
 srcdir=`echo "$srcdir" | sed 's%\([^\\/]\)[\\/]*$%\1%'`
@@ -856,6 +856,8 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-static-lib     turn on static linking of librtdebug [default=no]
+  --disable-ansi-color    ansi-color terminal output should be disabled
+                          [default=no]
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -2972,6 +2974,43 @@ echo "$as_me: error: unknown endianness
 presetting ac_cv_c_bigendian=no (or yes) will help" >&2;}
    { (exit 1); exit 1; }; } ;;
 esac
+
+
+	echo "$as_me:$LINENO: checking whether ANSI color should be used for terminal output" >&5
+echo $ECHO_N "checking whether ANSI color should be used for terminal output... $ECHO_C" >&6
+	# Check whether --enable-ansi-color or --disable-ansi-color was given.
+if test "${enable_ansi_color+set}" = set; then
+  enableval="$enable_ansi_color"
+  case "${enableval}" in
+									yes) test_on_ansi_color=yes ;;
+									no)  test_on_ansi_color=no ;;
+									*)   { { echo "$as_me:$LINENO: error: bad value ${enableval} for --disable-ansi-color" >&5
+echo "$as_me: error: bad value ${enableval} for --disable-ansi-color" >&2;}
+   { (exit 1); exit 1; }; } ;;
+								esac
+else
+  test_on_ansi_color=no
+fi;
+
+	if test "$test_on_ansi_color" = "yes"; then
+		echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+	else
+		ANSI_COLOR="ansi_color"
+		cat >>confdefs.h <<\_ACEOF
+#define WITH_ANSI_COLOR 1
+_ACEOF
+
+		echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+	fi
+
+cat >>confdefs.h <<\_ACEOF
+#define WITH_ANSI_COLOR
+_ACEOF
+
+
+
 
 
 # checking gcc version
@@ -5277,6 +5316,7 @@ s,@QTLINK_LEVEL@,$QTLINK_LEVEL,;t t
 s,@CC@,$CC,;t t
 s,@CFLAGS@,$CFLAGS,;t t
 s,@ac_ct_CC@,$ac_ct_CC,;t t
+s,@ANSI_COLOR@,$ANSI_COLOR,;t t
 s,@GCC_VERSION@,$GCC_VERSION,;t t
 s,@QMAKE_PATH@,$QMAKE_PATH,;t t
 s,@MKDIR_PATH@,$MKDIR_PATH,;t t
