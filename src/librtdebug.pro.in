@@ -95,6 +95,23 @@ contains(GCC_VERSION, 3) {
 	QMAKE_CXXFLAGS *= -fmessage-length=0
 }
 
+# find out the system
+HOST_OS=@HOST_OS@
+HOST_CPU=@HOST_CPU@
+contains(HOST_CPU, sparc) {
+	QMAKE_CXXFLAGS *= -mcpu=v9 -mtune=ultrasparc3
+}
+else {
+	contains(HOST_CPU, [pP]ower[pP]c) {
+      QMAKE_CXXFLAGS *= -Acpu=powerpc -mcpu=G4
+  }
+  else {
+		contains(HOST_CPU, [oO]pteron.+) {			
+			QMAKE_CXXFLAGS *= -Acpu=amd64 -march=opteron
+		}
+	}
+}
+
 # set the config to either release or debug
 COMPILE_LEVEL = @COMPILE_LEVEL@
 contains(COMPILE_LEVEL, debug) {
