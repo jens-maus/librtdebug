@@ -130,7 +130,7 @@ AC_DEFUN(AC_PROG_GCC_VERSION,[
 		   cc_version="v. ?.??, bad"
 			 cc_verc_fail=yes
 			 ;;
-		 2.95.[2-9]|2.95.[2-9][-.]*|3.[0-9]|3.[0-9].[0-9])
+		 2.95.[2-9]|2.95.[2-9][-.]*|3.[0-9]|3.[0-9].[0-9]|4.[0-9].[0-9])
 			 _cc_major=`echo $cc_version | cut -d '.' -f 1`
 			 _cc_minor=`echo $cc_version | cut -d '.' -f 2`
 			 _cc_mini=`echo $cc_version | cut -d '.' -f 3`
