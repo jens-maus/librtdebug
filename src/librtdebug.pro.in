@@ -80,14 +80,10 @@ unix {
 QMAKE_CXXFLAGS_RELEASE	= @CXXFLAGS@
 QMAKE_CXXFLAGS_DEBUG		= @CXXFLAGS@
 
-# for static compilation we define the following so that we
-# can define "staticconfig" in CONFIG if we want static linking.
-staticconfig {
-	QMAKE_LIBS_QT =
-	QMAKE_LIBS_QT_THREAD =
-	!macx:LIBS += $(QTDIR)/lib/libqt-mt.a
-	macx:LIBS += $(QTDIR)/lib/libqt-mt.a -lz -framework Carbon
-}
+# the librtdebug library itself doesn't require Qt so we remove the QT
+# libs from our linker dependency
+QMAKE_LIBS_QT =
+QMAKE_LIBS_QT_THREAD =
 
 # find out the GCC version
 # and define some gcc v3+ options only.
