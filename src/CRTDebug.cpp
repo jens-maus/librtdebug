@@ -1,7 +1,7 @@
 /* vim:set ts=2 nowrap: ****************************************************
 
  librtdebug - A C++ based thread-safe Runtime Debugging Library
- Copyright (C) 2003-2005 by Jens Langner <Jens.Langner@light-speed.de>
+ Copyright (C) 2003-2006 by Jens Langner <Jens.Langner@light-speed.de>
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,10 @@
 #include <iomanip>
 #include <sys/time.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <cctype>
+
+#include "config.h"
 
 // define variables for using ANSI colors in our debugging scheme
 #define ANSI_ESC_CLR				"\033[0m"
@@ -64,16 +68,14 @@
 #define ANSI_ESC_BG_CYAN		"\033[0;46m"
 #define ANSI_ESC_BG_LGRAY		"\033[0;47m"
 
-// define the colors for each debug group
-#define DBF_GR_NONE_COLOR				ANSI_ESC_FG_WHITE
-#define DBF_GR_DEBUG_COLOR			ANSI_ESC_FG_PURPLE
-#define DBF_GR_VERBOSE_COLOR		ANSI_ESC_FG_BLUE
-#define DBF_GR_WARNING_COLOR		ANSI_ESC_FG_YELLOW
-#define DBF_GR_ERROR_COLOR			ANSI_ESC_FG_RED
-#define DBF_GR_INFO_COLOR				ANSI_ESC_FG_CYAN
-#define DBF_GR_CALLTRACE_COLOR	ANSI_ESC_FG_BROWN
-#define DBF_GR_CORE_COLOR				ANSI_ESC_FG_GREEN
-#define DBF_GR_CLOCK_COLOR			ANSI_ESC_FG_BLUE
+// define the colors for each debug class
+#define DBC_CTRACE_COLOR		ANSI_ESC_FG_BROWN
+#define DBC_REPORT_COLOR		ANSI_ESC_FG_GREEN
+#define DBC_ASSERT_COLOR		ANSI_ESC_FG_RED
+#define DBC_TIMEVAL_COLOR		ANSI_ESC_FG_BLUE
+#define DBC_DEBUG_COLOR			ANSI_ESC_FG_PURPLE
+#define DBC_ERROR_COLOR			ANSI_ESC_FG_RED
+#define DBC_WARNING_COLOR		ANSI_ESC_FG_YELLOW
 
 // some often used macros to output the thread number at the beginning of each
 // debug output so that we know from which thread this output came.
@@ -84,6 +86,45 @@
 														<< std::setfill('0') << THREAD_ID << ":" << ANSI_ESC_CLR << " "
 #define THREAD_ID_CHECK			if(m_ThreadID[pthread_self()] == 0)\
 															m_ThreadID[pthread_self()] = ++m_iThreadCount
+
+// some systems doesn't have the MICROSEC macros
+#ifndef MICROSEC
+#define MICROSEC 1000
+#endif
+#ifndef MILLISEC
+#define MILLISEC 1000000
+#endif
+
+//!
+//! The following "NameCompare" inlined class is a small helper class to please
+//! the damned STL find_if() method so that we can "easily" do a lowercase
+//! substring search in an std::map<>. What a shit this STL is....
+//!
+////////////////////////////////////////////////////////////////////////////////
+class NameCompare
+{
+	public:
+		NameCompare(std::string searchPattern)
+			: m_sSearchPattern(searchPattern)
+		{ 
+			// well, believe it or not, but this is how you have
+			// to convert a std::string to lowercase... :(
+			std::transform(m_sSearchPattern.begin(), 
+										 m_sSearchPattern.end(), 
+										 m_sSearchPattern.begin(), tolower);
+		}
+
+		bool operator()(std::pair<std::string, bool> cur);
+
+	private:
+		std::string m_sSearchPattern;
+};
+
+bool NameCompare::operator()(std::pair<std::string, bool> cur)
+{
+	std::string::size_type pos = m_sSearchPattern.find(cur.first, 0);
+	return pos != std::string::npos;
+}
 
 //  Class:       CRTDebug
 //  Method:      instance
@@ -97,9 +138,7 @@ CRTDebug* CRTDebug::m_pSingletonInstance = 0;
 CRTDebug* CRTDebug::instance()
 {
 	if(m_pSingletonInstance == 0)
-	{
 		m_pSingletonInstance = new CRTDebug();
-	}
 
 	return m_pSingletonInstance;
 }
@@ -122,17 +161,208 @@ void CRTDebug::destroy()
 }
 
 //  Class:       CRTDebug
+//  Method:      init
+//! 
+//! initializes the debugging framework by parsing a specified environment variable
+//! via getenv() so that only certain predefined debug messages will be output,
+//! 
+////////////////////////////////////////////////////////////////////////////////
+void CRTDebug::init(const char* variable)
+{
+	CRTDebug* rtdebug = CRTDebug::instance();
+
+	// if the user has specified an environment variable we
+	// go and parse it accordingly.
+	if(variable != NULL)
+	{
+		std::cout << "*** parsing ENV variable: '" << variable << "'" << std::endl
+		          << "*** for tokens: '@' class, '+' flags, '&' name, '%' module" << std::endl
+							<< "*** --------------------------------------------------------------------------" << std::endl;
+		
+		char* var = getenv(variable);
+		if(var != NULL)
+		{
+			char* s = var;
+
+			// now we iterate through the env-variable
+			while(*s)
+			{
+				char firstchar;
+				char* e;
+				bool negate = false;
+
+				if((e = strpbrk(s, " ,;")) == NULL)
+					e = s+strlen(s);
+
+				// analyze the first two characters of the
+				// found token
+				firstchar = s[0];
+				if(firstchar != '\0')
+				{
+					if(firstchar == '!')
+					{
+						negate = true;
+						firstchar = s[1];
+						s++;
+					}
+					else if(s[1] == '!')
+					{
+						negate = true;
+						s++;
+					}
+				}
+				
+				switch(firstchar)
+				{
+					// class definition
+					case '@':
+					{
+						static const struct { char* token; unsigned int flag; } dbclasses[] =
+						{
+							{ "ctrace",	DBC_CTRACE	},
+							{ "report", DBC_REPORT  },
+							{ "assert", DBC_ASSERT  },
+							{ "timeval",DBC_TIMEVAL },
+							{ "debug",  DBC_DEBUG   },
+							{ "error",  DBC_ERROR   },
+							{ "warning",DBC_WARNING },
+							{ "all",    DBC_ALL			},
+							{ NULL,			0						}
+						};
+
+						for(int i=0; dbclasses[i].token; i++)
+						{
+							if(strncasecmp(s+1, dbclasses[i].token, strlen(dbclasses[i].token)) == 0)
+							{
+								std::cout << "*** @dbclass: " << (!negate ? "show" : "hide") << " '" << dbclasses[i].token << "' output" << std::endl;
+
+								if(negate)
+									rtdebug->m_iDebugClasses &= ~dbclasses[i].flag;
+								else
+									rtdebug->m_iDebugClasses |= dbclasses[i].flag;
+							}
+						}
+					}
+					break;
+
+					// flags definition
+					case '+':
+					{
+						static const struct { char* token; unsigned int flag; } dbflags[] =
+						{
+							{ "always",	DBF_ALWAYS	},
+							{ "startup",DBF_STARTUP },
+							{ "all",    DBF_ALL			},
+							{ NULL,			0						}
+						};
+
+						for(int i=0; dbflags[i].token; i++)
+						{
+							if(strncasecmp(s+1, dbflags[i].token, strlen(dbflags[i].token)) == 0)
+							{
+								std::cout << "*** +dbflag.: " << (!negate ? "show" : "hide") << " '" << dbflags[i].token << "' output" << std::endl;
+
+								if(negate)
+									rtdebug->m_iDebugFlags &= ~dbflags[i].flag;
+								else
+									rtdebug->m_iDebugFlags |= dbflags[i].flag;
+							}
+						}
+					}
+					break;
+
+					// file definition
+					case '&':
+					{
+						char* tk = strdup(s+1);
+						char* t;
+
+						if((t = strpbrk(tk, " ,;")))
+							*t = '\0';
+
+						// convert the C-string to an STL std::string
+						std::string token = tk;
+						std::transform(token.begin(), 
+													 token.end(), 
+													 token.begin(), tolower);						
+						free(tk);
+
+						// lets add the lowercase token to our sourcefilemap.
+						rtdebug->m_DebugFiles[token] = !negate;
+						std::cout << "*** &name...: " << (!negate ? "show" : "hide") << " '" << token << "' output" << std::endl;
+					}
+					break;
+
+					// module definition
+					case '%':
+					{
+						char* tk = strdup(s+1);
+						char* t;
+
+						if((t = strpbrk(tk, " ,;")))
+							*t = '\0';
+
+						// convert the C-string to an STL std::string
+						std::string token = tk;
+						std::transform(token.begin(), 
+													 token.end(), 
+													 token.begin(), tolower);						
+						free(tk);
+
+						// lets add the lowercase token to our sourcefilemap.
+						rtdebug->m_DebugModules[token] = !negate;
+						std::cout << "*** %module.: " << (!negate ? "show" : "hide") << " '" << token << "' output" << std::endl;
+
+					}
+					break;
+
+					default:
+					{
+						if(strncasecmp(s, "ansi", 4) == 0)
+						{
+							std::cout << "*** switching " << (!negate ? "on" : "off") << " ANSI color output" << std::endl;
+							rtdebug->m_bHighlighting = !negate;
+						}
+					}
+				}
+
+				// set the next start to our last search
+				if(*e)
+					s = ++e;
+				else
+					break;
+			}
+
+			std::cout << "*** --------------------------------------------------------------------------" << std::endl;
+		}
+
+		std::cout << "*** active debug classes/flags: 0x" << std::hex << rtdebug->debugClasses() << "/0x" << std::hex << rtdebug->debugFlags() << std::endl;
+		std::cout << "*** Normal processing follows ************************************************" << std::endl;
+	}
+}
+
+//  Class:       CRTDebug
 //  Constructor: CRTDebug
 //! 
 //! Construct a CRTDebug object.
 //! 
 ////////////////////////////////////////////////////////////////////////////////
-CRTDebug::CRTDebug(Level dLevel)
+CRTDebug::CRTDebug(const int dbclasses, const int dbflags)
 	: m_bHighlighting(true),
-	  m_CurDebugLevel(dLevel),
+	  m_iDebugClasses(dbclasses),
+		m_iDebugFlags(dbflags),
 		m_iThreadCount(0)
 {
 	pthread_mutex_init(&m_pCoutMutex, NULL);
+
+	// now we see if we have to apply some default settings or not.
+	if(m_iDebugClasses == 0)
+		m_iDebugClasses = DBC_ERROR | DBC_DEBUG | DBC_WARNING | DBC_ASSERT | DBC_REPORT;
+
+	if(m_iDebugFlags == 0)
+		m_iDebugFlags = DBF_ALWAYS | DBF_STARTUP; 
+
+	std::cout << "*** rtdebug v" << PACKAGE_VERSION << " runtime debugging framework startup *************************" << std::endl;
 }
 
 //  Class:       CRTDebug
@@ -144,6 +374,8 @@ CRTDebug::CRTDebug(Level dLevel)
 CRTDebug::~CRTDebug()
 {
 	pthread_mutex_destroy(&m_pCoutMutex);
+
+	std::cout << "*** rtdebug framework shutdowned *********************************************" << std::endl;	
 }
 
 //  Class:       CRTDebug
@@ -160,12 +392,13 @@ CRTDebug::~CRTDebug()
 //! @param       line the line number on which the ENTER() was placed
 //! @param       function name of the function in which the ENTER() was placed.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::Enter(const int c, const char *file, long line, const char *function)
+void CRTDebug::Enter(const int c, const char* m, const char* file, long line, 
+										 const char* function)
 {
-	// first we check if need to process this debug message or not,
-	// depending on the currently set debug level
-	if(((m_CurDebugLevel & c)) == 0) return;
-
+	// check if we should really output something
+	if(matchDebugSpec(c, m, file) == false)
+		return;
+	
 	pthread_mutex_lock(&m_pCoutMutex);
 
 	// check if the call is issued from a new thread or if this is an already
@@ -175,7 +408,7 @@ void CRTDebug::Enter(const int c, const char *file, long line, const char *funct
 	if(m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBF_GR_CALLTRACE_COLOR
+		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_CTRACE_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
 							<< std::dec << line << ":Entering " << function << "()"
 							<< ANSI_ESC_CLR << std::endl;
@@ -207,11 +440,12 @@ void CRTDebug::Enter(const int c, const char *file, long line, const char *funct
 //! @param       line the line number on which the LEAVE() was placed
 //! @param       function name of the function in which the LEAVE() was placed.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::Leave(const int c, const char *file, int line, const char *function)
+void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
+										 const char *function)
 {
-	// first we check if need to process this debug message or not,
-	// depending on the currently set debug level
-	if((m_CurDebugLevel & c) == 0) return;
+	// check if we should really output something
+	if(matchDebugSpec(c, m, file) == false)
+		return;
 	
 	if(m_IdentLevel[pthread_self()] > 0)
 		m_IdentLevel[pthread_self()]--;
@@ -225,7 +459,7 @@ void CRTDebug::Leave(const int c, const char *file, int line, const char *functi
 	if(m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBF_GR_CALLTRACE_COLOR
+		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_CTRACE_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
 							<< std::dec << line << ":Leaving " << function << "()"
 							<< ANSI_ESC_CLR << std::endl;
@@ -256,12 +490,12 @@ void CRTDebug::Leave(const int c, const char *file, int line, const char *functi
 //! @param       function name of the function in which the RETURN() was placed.
 //! @param       return the return value
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::Return(const int c, const char *file, int line,
-										const char *function, long result)
+void CRTDebug::Return(const int c, const char* m, const char *file, int line,
+											const char *function, long result)
 {
-	// first we check if need to process this debug message or not,
-	// depending on the currently set debug level
-	if((m_CurDebugLevel & c) == 0) return;
+	// check if we should really output something
+	if(matchDebugSpec(c, m, file) == false)
+		return;
 	
   if(m_IdentLevel[pthread_self()] > 0)
 		m_IdentLevel[pthread_self()]--;
@@ -275,7 +509,7 @@ void CRTDebug::Return(const int c, const char *file, int line,
 	if(m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBF_GR_CALLTRACE_COLOR
+		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_CTRACE_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
 							<< std::dec << line << ":Leaving " << function << "() (result 0x"
 							<< std::hex << std::setw(8) << std::setfill('0') << result << ", "
@@ -311,12 +545,12 @@ void CRTDebug::Return(const int c, const char *file, int line,
 //! @param       file		the file name of the source code where we placed SHOWVALUE()
 //! @param       line		the line number on which the SHOWVALUE() is.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::ShowValue(const int c, long value, int size, 
-											 const char *name, const char *file, long line)
+void CRTDebug::ShowValue(const int c, const char* m, long value, int size, 
+												 const char *name, const char *file, long line)
 {
-	// first we check if need to process this debug message or not,
-	// depending on the currently set debug level
-	if((m_CurDebugLevel & c) == 0) return;
+	// check if we should really output something
+	if(matchDebugSpec(c, m, file) == false)
+		return;
 	
 	pthread_mutex_lock(&m_pCoutMutex);
 
@@ -327,7 +561,7 @@ void CRTDebug::ShowValue(const int c, long value, int size,
 	if(m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBF_GR_CORE_COLOR
+		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_REPORT_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << name << " = " << value
 							<< ", 0x" << std::hex << std::setw(size*2) << std::setfill('0')
@@ -377,12 +611,12 @@ void CRTDebug::ShowValue(const int c, long value, int size,
 //! @param       file			the file name of the source we have the SHOWPOINTER()
 //! @param       line			the line number on which the SHOWPOINTER() is.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::ShowPointer(const int c, void *pointer, const char *name,
-												 const char *file, long line)
+void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
+													 const char* name, const char* file, long line)
 {
-	// first we check if need to process this debug message or not,
-	// depending on the currently set debug level
-	if((m_CurDebugLevel & c) == 0) return;
+	// check if we should really output something
+	if(matchDebugSpec(c, m, file) == false)
+		return;
 	
 	pthread_mutex_lock(&m_pCoutMutex);
 
@@ -393,7 +627,7 @@ void CRTDebug::ShowPointer(const int c, void *pointer, const char *name,
 	if(m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBF_GR_CORE_COLOR
+		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_REPORT_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << name << " = ";
 	}
@@ -405,10 +639,14 @@ void CRTDebug::ShowPointer(const int c, void *pointer, const char *name,
 							<< ":" << std::dec << line << ":" << name << " = ";
 	}
 
-	if(pointer != NULL)	std::cout << "0x" << std::hex << std::setw(8) << std::setfill('0') << pointer;
-	else								std::cout << "NULL";
+	if(pointer != NULL)
+		std::cout << "0x" << std::hex << std::setw(8) << std::setfill('0') << pointer;
+	else
+		std::cout << "NULL";
 
-	if(m_bHighlighting) std::cout << ANSI_ESC_CLR;
+	if(m_bHighlighting)
+		std::cout << ANSI_ESC_CLR;
+	
 	std::cout << std::endl;
 
 	pthread_mutex_unlock(&m_pCoutMutex);
@@ -431,12 +669,12 @@ void CRTDebug::ShowPointer(const int c, void *pointer, const char *name,
 //! @param       file		the file name were the SHOWSTRING() is
 //! @param       line		the line number on which the SHOWSTRING() is
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::ShowString(const int c, const char *string,
-												const char *name, const char *file, long line)
+void CRTDebug::ShowString(const int c, const char* m, const char* string,
+													const char* name, const char* file, long line)
 {
-	// first we check if need to process this debug message or not,
-	// depending on the currently set debug level
-	if((m_CurDebugLevel & c) == 0) return;
+	// check if we should really output something
+	if(matchDebugSpec(c, m, file) == false)
+		return;
 	
 	pthread_mutex_lock(&m_pCoutMutex);
 
@@ -447,7 +685,7 @@ void CRTDebug::ShowString(const int c, const char *string,
 	if(m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBF_GR_CORE_COLOR
+		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_REPORT_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << name << " = 0x" << std::hex
 							<< std::setw(8) << std::setfill('0') << string << " \""
@@ -480,12 +718,12 @@ void CRTDebug::ShowString(const int c, const char *string,
 //! @param       file		the filename of the source
 //! @param       line		the line number where we have placed the SHOWMSG()
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::ShowMessage(const int c, const char *string,
-												 const char *file, long line)
+void CRTDebug::ShowMessage(const int c, const char* m, const char* string,
+													 const char* file, long line)
 {
-	// first we check if need to process this debug message or not,
-	// depending on the currently set debug level
-	if((m_CurDebugLevel & c) == 0) return;
+	// check if we should really output something
+	if(matchDebugSpec(c, m, file) == false)
+		return;
 	
 	pthread_mutex_lock(&m_pCoutMutex);
 
@@ -496,7 +734,7 @@ void CRTDebug::ShowMessage(const int c, const char *string,
 	if(m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBF_GR_CORE_COLOR
+		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_REPORT_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << ANSI_ESC_CLR
 							<< std::endl;
@@ -528,16 +766,17 @@ void CRTDebug::ShowMessage(const int c, const char *string,
 //! @param       file		the filename of the source code
 //! @param       line		the line number on which we have the STARTCLOCK()
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::StartClock(const int c, const char *string,
-												const char *file, long line)
+void CRTDebug::StartClock(const int c, const char* m, const char* string,
+													const char* file, long line)
 {
-	// first we check if need to process this debug message or not,
-	// depending on the currently set debug level
-	if((m_CurDebugLevel & c) == 0) return;
+	// check if we should really output something
+	if(matchDebugSpec(c, m, file) == false)
+		return;
 	
 	// lets get the current time of the day
 	struct timeval* tp = &m_TimeMeasure[pthread_self()];
-	if(gettimeofday(tp, NULL) != 0) return;
+	if(gettimeofday(tp, NULL) != 0)
+		return;
 
 	// convert the timeval in some human readable format
 	double starttime = (double)tp->tv_sec + ((double)tp->tv_usec/(double)MICROSEC);
@@ -560,7 +799,7 @@ void CRTDebug::StartClock(const int c, const char *string,
 	if(m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBF_GR_CLOCK_COLOR
+		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_TIMEVAL_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << " started@"
 							<< formattedTime << ANSI_ESC_CLR << std::endl;
@@ -592,16 +831,17 @@ void CRTDebug::StartClock(const int c, const char *string,
 //! @param       file		the filename of the source code file
 //! @param       line		the line number on which we placed the STOPCLOCK()
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::StopClock(const int c, const char *string,
-											 const char *file, long line)
+void CRTDebug::StopClock(const int c, const char* m, const char* string,
+												 const char* file, long line)
 {
-	// first we check if need to process this debug message or not,
-	// depending on the currently set debug level
-	if((m_CurDebugLevel & c) == 0) return;
+	// check if we should really output something
+	if(matchDebugSpec(c, m, file) == false)
+		return;
 	
 	// lets get the current time of the day
 	struct timeval	newtp;
-	if(gettimeofday(&newtp, NULL) != 0) return;
+	if(gettimeofday(&newtp, NULL) != 0)
+		return;
 
 	// now we calculate the timedifference
 	struct timeval* oldtp = &m_TimeMeasure[pthread_self()];
@@ -636,7 +876,7 @@ void CRTDebug::StopClock(const int c, const char *string,
 	if(m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBF_GR_CLOCK_COLOR
+		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_TIMEVAL_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << " stopped@"
 							<< formattedTime << " = " << std::fixed << std::setprecision(3) << difftime << "s"
@@ -672,12 +912,12 @@ void CRTDebug::StopClock(const int c, const char *string,
 //! @param       fmt  the format string
 //! @param       ...  a vararg list of parameters.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::dprintf_header(const int c, const int g, const char *file,
-														long line, const char *fmt, ...)
+void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
+															long line, const char* fmt, ...)
 {
-	// first we check if need to process this debug message or not,
-	// depending on the currently set debug level
-	if((m_CurDebugLevel & c) == 0) return;
+	// check if we should really output something
+	if(matchDebugSpec(c, m, file) == false)
+		return;
 	
 	va_list args;
 	va_start(args, fmt);
@@ -693,16 +933,13 @@ void CRTDebug::dprintf_header(const int c, const int g, const char *file,
 	
 	if(m_bHighlighting)
 	{
-		char *highlight = "";
-		switch(g)
+		char *highlight;
+		switch(c)
 		{
-			case DBF_GR_NONE:			highlight = DBF_GR_NONE_COLOR;		break;
-			case DBF_GR_DEBUG:		highlight = DBF_GR_DEBUG_COLOR;		break;
-			case DBF_GR_VERBOSE:	highlight = DBF_GR_VERBOSE_COLOR; break;
-			case DBF_GR_WARNING:	highlight	= DBF_GR_WARNING_COLOR;	break;
-			case DBF_GR_ERROR:		highlight = DBF_GR_ERROR_COLOR;		break;
-			case DBF_GR_INFO:			highlight = DBF_GR_INFO_COLOR;		break;
-			case DBF_GR_CORE:			highlight = DBF_GR_CORE_COLOR;		break;
+			case DBC_DEBUG:		highlight = DBC_DEBUG_COLOR;		break;
+			case DBC_ERROR:		highlight = DBC_ERROR_COLOR;		break;
+			case DBC_WARNING:	highlight	= DBC_WARNING_COLOR;	break;
+			default:					highlight = ANSI_ESC_FG_WHITE;	break;
 		}
 
 		std::cout << THREAD_PREFIX_COLOR;
@@ -738,11 +975,11 @@ void CRTDebug::dprintf_header(const int c, const int g, const char *file,
 //! @param       fmt the format string
 //! @param       ... a vararg list of parameters.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::dprintf(const int c, const int g, const char *fmt, ...)
+void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
 {
-	// first we check if need to process this debug message or not,
-	// depending on the currently set debug level
-	if((m_CurDebugLevel & c) == 0) return;
+	// check if we should really output something
+	if(matchDebugSpec(c, m, NULL) == false)
+		return;
 	
 	va_list args;
 	va_start(args, fmt);
@@ -759,36 +996,33 @@ void CRTDebug::dprintf(const int c, const int g, const char *fmt, ...)
 	#ifdef DEBUG
 	if(m_bHighlighting)
 	{
-		switch(g)
+		switch(c)
 		{
-			case DBF_GR_DEBUG:		std::cout << DBF_GR_DEBUG_COLOR		<< "Debug..: ";	break;
-			case DBF_GR_VERBOSE:	std::cout << DBF_GR_VERBOSE_COLOR << "Verbose: "; break;
-			case DBF_GR_WARNING:	std::cout << DBF_GR_WARNING_COLOR << "Warning: ";	break;
-			case DBF_GR_ERROR:		std::cout << DBF_GR_ERROR_COLOR   << "Error..: ";	break;
-			case DBF_GR_INFO:			std::cout << DBF_GR_INFO_COLOR		<< "Info...: ";	break;
+			case DBC_DEBUG:		std::cout << DBC_DEBUG_COLOR << "Debug..: "; break;
+			case DBC_ERROR:		std::cout << DBC_ERROR_COLOR << "Error..: "; break;
+			case DBC_WARNING:	std::cout << DBC_WARNING_COLOR << "Warning: "; break;
+			default:					std::cout << ANSI_ESC_FG_WHITE << "Info...: "; break;
 		}
 	}
 	else
 	{
-		switch(g)
+		switch(c)
 		{
-			case DBF_GR_DEBUG:		std::cout << "Debug..: ";	break;
-			case DBF_GR_VERBOSE:	std::cout << "Verbose: "; break;
-			case DBF_GR_WARNING:	std::cout << "Warning: ";	break;
-			case DBF_GR_ERROR:		std::cout << "Error..: ";	break;
-			case DBF_GR_INFO:			std::cout << "Info...: ";	break;
+			case DBC_DEBUG:		std::cout << "Debug..: "; break;
+			case DBC_ERROR:		std::cout << "Error..: "; break;
+			case DBC_WARNING:	std::cout << "Warning: "; break;
+			default:					std::cout << "Info...: "; break;
 		}
 	}
 	#else
 	if(m_bHighlighting)
 	{
-		switch(g)
+		switch(c)
 		{
-			case DBF_GR_DEBUG:		std::cout << DBF_GR_DEBUG_COLOR;		break;
-			case DBF_GR_VERBOSE:	std::cout << DBF_GR_VERBOSE_COLOR;	break;
-			case DBF_GR_WARNING:	std::cout << DBF_GR_WARNING_COLOR;	break;
-			case DBF_GR_ERROR:		std::cout << DBF_GR_ERROR_COLOR;		break;
-			case DBF_GR_INFO:			std::cout << DBF_GR_INFO_COLOR;			break;
+			case DBC_DEBUG:		std::cout << DBC_DEBUG_COLOR; break;
+			case DBC_ERROR:		std::cout << DBC_ERROR_COLOR; break;
+			case DBC_WARNING:	std::cout << DBC_WARNING_COLOR; break;
+			default:					std::cout << ANSI_ESC_FG_WHITE; break;
 		}
 	}
 	#endif
@@ -796,4 +1030,73 @@ void CRTDebug::dprintf(const int c, const int g, const char *fmt, ...)
 	std::cout << buf << ANSI_ESC_CLR << std::endl;
 
 	pthread_mutex_unlock(&m_pCoutMutex);
+}
+
+unsigned int CRTDebug::debugClasses() const
+{ 
+	return m_iDebugClasses;
+}
+
+unsigned int CRTDebug::debugFlags() const
+{ 
+	return m_iDebugFlags;
+}
+
+bool CRTDebug::highlighting() const
+{ 
+	return m_bHighlighting;
+}
+
+void CRTDebug::setDebugClasses(unsigned int classes)
+{ 
+	m_iDebugClasses = classes;
+}
+
+void CRTDebug::setDebugFlags(unsigned int flags)
+{ 
+	m_iDebugFlags = flags;
+}
+
+void CRTDebug::setHighlighting(bool on)
+{ 
+	m_bHighlighting = on;
+}	
+
+bool CRTDebug::matchDebugSpec(const int cl, const char* module, const char* file)
+{
+	bool result = false;
+
+	// first we check if we need to process this debug message or not,
+	// depending on the currently set debug level
+	if(((m_iDebugClasses & cl)) != 0)
+		result = true;
+
+	// now we search through our sourcefileMap and see if we should suppress
+	// the output or force it.
+	if(file != NULL)
+	{
+		NameCompare cmp(file);
+		std::map<std::string, bool>::iterator iter = find_if(m_DebugFiles.begin(), m_DebugFiles.end(), cmp);
+		if(iter != m_DebugFiles.end())
+		{
+			if((*iter).second == true)
+				result = true;
+			else
+				result = false;
+		}
+	}
+
+	if(module != NULL)
+	{
+		std::map<std::string, bool>::iterator it = m_DebugModules.find(module);
+		if(it != m_DebugModules.end())
+		{
+			if((*it).second == true)
+				result = true;
+			else
+				result = false;			
+		}
+	}
+
+	return result;
 }

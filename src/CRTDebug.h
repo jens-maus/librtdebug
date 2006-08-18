@@ -1,7 +1,7 @@
 /* vim:set ts=2 nowrap: ****************************************************
 
  librtdebug - A C++ based thread-safe Runtime Debugging Library
- Copyright (C) 2003-2005 by Jens Langner <Jens.Langner@light-speed.de>
+ Copyright (C) 2003-2006 by Jens Langner <Jens.Langner@light-speed.de>
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -24,34 +24,27 @@
 #ifndef CRTDEBUG_H
 #define CRTDEBUG_H
 
-#include <typeinfo>
-#include <string>
 #include <map>
 #include <pthread.h>
 
-// some systems doesn't have the MICROSEC macros
-#ifndef MICROSEC
-#define MICROSEC 1000
-#endif
-#ifndef MILLISEC
-#define MILLISEC 1000000
-#endif
+// debug classes
+#define DBC_CTRACE		(1<<0) // call tracing (ENTER/LEAVE etc.)
+#define DBC_REPORT		(1<<1) // reports (SHOWVALUE/SHOWSTRING etc.)
+#define DBC_ASSERT		(1<<2) // asserts (ASSERT)
+#define DBC_TIMEVAL		(1<<3) // time evaluations (STARTCLOCK/STOPCLOCK)
+#define DBC_DEBUG			(1<<4) // debugging output D()
+#define DBC_ERROR			(1<<5) // error output     E()
+#define DBC_WARNING		(1<<6) // warning output   W()
+#define DBC_ALL				(0xffffffff)
 
-// predefined debugging groups (to layout them differently)
-#define DBF_GR_NONE			(0<<0)
-#define DBF_GR_DEBUG		(1<<0)
-#define DBF_GR_VERBOSE	(1<<1)
-#define DBF_GR_WARNING	(1<<2)
-#define DBF_GR_ERROR		(1<<3)
-#define DBF_GR_INFO			(1<<4)
-#define DBF_GR_CORE			(1<<5)
-#define DBF_GR_ALL			(0xffffffff)
+// debug flags
+#define DBF_ALWAYS		(1<<0)
+#define DBF_STARTUP		(1<<1)
+#define DBF_ALL				(0xffffffff)
 
-// debugging classes (specify your own classes here)
-#define DBF_CL_NONE			(0<<0)
-#define DBF_CL_CORE			(1<<0)
-#define DBF_CL_USER			(1<<1)
-#define DBF_CL_ALL			(0xffffffff)
+// debug modules
+#define DBM_NONE			NULL
+#define DBM_ALL				"all"
 
 //  Classname:   CRTDebug
 //! @brief debugging purpose class
@@ -91,39 +84,41 @@
 class CRTDebug
 {
 	public:
-		enum Level
-		{
-			None	= DBF_CL_NONE,	//!< no debug messages at all
-			Core	= DBF_CL_CORE,  //!< enable core-only debug messages
-			All		= DBF_CL_ALL		//!< enable ALL debug messages
-		};
-
 		// the static singleton instance method
 		static CRTDebug* instance();
 		static void destroy();
 
+		// for initialization via ENV variables
+		static void init(const char* variable=0);
+
 		// our main debug output methods
-		void Enter(const int c, const char* file, long line, const char* function);
-		void Leave(const int c, const char* file, int line, const char* function);
-		void Return(const int c, const char* file, int line, const char* function, long result);
-		void ShowValue(const int c, long value, int size, const char* name, const char* file, long line);
-		void ShowPointer(const int c, void* pointer, const char* name, const char* file, long line);
-		void ShowString(const int c, const char* string, const char* name, const char* file, long line);
-		void ShowMessage(const int c, const char* string, const char* file, long line);
-		void StartClock(const int c, const char* string, const char* file, long line);
-		void StopClock(const int c, const char* string, const char* file, long line);
+		void Enter(const int c, const char* m, const char* file, long line, const char* function);
+		void Leave(const int c, const char* m, const char* file, int line, const char* function);
+		void Return(const int c, const char* m, const char* file, int line, const char* function, long result);
+		void ShowValue(const int c, const char* m, long value, int size, const char* name, const char* file, long line);
+		void ShowPointer(const int c, const char* m, void* pointer, const char* name, const char* file, long line);
+		void ShowString(const int c, const char* m, const char* string, const char* name, const char* file, long line);
+		void ShowMessage(const int c, const char* m, const char* string, const char* file, long line);
+		void StartClock(const int c, const char* m, const char* string, const char* file, long line);
+		void StopClock(const int c, const char* m, const char* string, const char* file, long line);
 
 		// some raw methods to format text like printf() does
-		void dprintf_header(const int c, const int g, const char* file, long line, const char* fmt, ...);
-		void dprintf(const int c, const int g, const char* fmt, ...);
+		void dprintf_header(const int c, const char* m, const char* file, long line, const char* fmt, ...);
+		void dprintf(const int c, const char* m, const char* fmt, ...);
 
 		// general public methods to control debug class
-		void setDebugLevel(Level dLevel)	{ m_CurDebugLevel = dLevel; }
-		void setHighlighting(bool hLight)	{ m_bHighlighting = hLight; }	
+		unsigned int debugClasses() const;
+		unsigned int debugFlags() const;
+		bool highlighting() const;
+		void setDebugClasses(unsigned int classes);
+		void setDebugFlags(unsigned int flags);
+		void setHighlighting(bool on);
 		
 	protected:
-		CRTDebug(Level dLevel=All);
+		CRTDebug(const int dbclasses=0, const int dbflags=0);
 		~CRTDebug();
+
+		bool matchDebugSpec(const int cl, const char* module, const char* file);
 	
 	private:
 		static CRTDebug*										m_pSingletonInstance;	//!< the singleton instance
@@ -132,8 +127,11 @@ class CRTDebug
 		std::map<pthread_t, struct timeval>	m_TimeMeasure;				//!< for measuring the time we need more structs
 		bool																m_bHighlighting;			//!< text ANSI highlighting?
 		pthread_mutex_t											m_pCoutMutex;					//!< a mutex to sync cout output
-		Level																m_CurDebugLevel;			//!< the currently active debuglevel
+		unsigned int												m_iDebugClasses;			//!< the currently active debug classes
+		std::map<std::string, bool>					m_DebugModules;				//!< to map actual specified debug modules
+		std::map<std::string, bool>					m_DebugFiles;					//!< to map actual specified source file names
+		unsigned int												m_iDebugFlags;				//!< the currently active debug flags
 		unsigned int												m_iThreadCount;				//!< counter of total number of threads processing
 };
 
-#endif // CRTDebug_H
+#endif // CRTDEBUG_H

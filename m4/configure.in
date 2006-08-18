@@ -1,7 +1,7 @@
 #/* vim:set ts=2 nowrap: ****************************************************
 #
 # librtdebug - A C++ based thread-safe Runtime Debugging Library
-# Copyright (C) 2003-2005 by Jens Langner <Jens.Langner@light-speed.de>
+# Copyright (C) 2003-2006 by Jens Langner <Jens.Langner@light-speed.de>
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -22,8 +22,8 @@
 #***************************************************************************/
 
 AC_PREREQ(2.57)
-AC_INIT(Runtime Debugging Library, 1.0, Jens.Langner@light-speed.de, librtdebug-1.0)
-AC_COPYRIGHT(Copyright (c) 2003-2005 by Jens Langner <Jens.Langner@light-speed.de>)
+AC_INIT(rtdebug, 2.0, Jens.Langner@light-speed.de)
+AC_COPYRIGHT(Copyright (c) 2003-2006 by Jens Langner <Jens.Langner@light-speed.de>)
 AC_REVISION($Revision$)
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADER([src/includes/config.h])

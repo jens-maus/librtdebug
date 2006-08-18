@@ -1,7 +1,7 @@
 /* vim:set ts=2 nowrap: ****************************************************
 
  librtdebug - A C++ based thread-safe Runtime Debugging Library
- Copyright (C) 2003-2005 by Jens Langner <Jens.Langner@light-speed.de>
+ Copyright (C) 2003-2006 by Jens Langner <Jens.Langner@light-speed.de>
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
 //! Please take a look at the CRTDebug.h header file for a more
 //! detailed information about the ideas behind that debugging mechanism
 
-// redefine the QT's own debug system
+// redefine the Qt's own debug system
 #ifdef qDebug
 #undef qDebug
 #define qDebug	D
@@ -107,37 +107,37 @@
 
 #if defined(DEBUG)
 
+#if !defined(DEBUG_MODULE)
+#define DEBUG_MODULE DBM_NONE
+#endif
+
 // Core class information class messages
-#define ENTER()					CRTDebug::instance()->Enter(DBF_CL_CORE, __FILE__, __LINE__, __FUNCTION__)
-#define LEAVE()					CRTDebug::instance()->Leave(DBF_CL_CORE, __FILE__, __LINE__, __FUNCTION__)
-#define RETURN(r)				CRTDebug::instance()->Return(DBF_CL_CORE, __FILE__, __LINE__, __FUNCTION__, (long)r)
-#define SHOWVALUE(v)		CRTDebug::instance()->ShowValue(DBF_CL_CORE, (long)v, sizeof(v), #v, __FILE__, __LINE__)
-#define SHOWPOINTER(p)	CRTDebug::instance()->ShowPointer(DBF_CL_CORE, p, #p, __FILE__, __LINE__)
-#define SHOWSTRING(s)		CRTDebug::instance()->ShowString(DBF_CL_CORE, s, #s, __FILE__, __LINE__)
-#define SHOWMSG(m)			CRTDebug::instance()->ShowMessage(DBF_CL_CORE, m, __FILE__, __LINE__)
-#define STARTCLOCK(s)		CRTDebug::instance()->StartClock(DBF_CL_CORE, s, __FILE__, __LINE__)
-#define STOPCLOCK(s)		CRTDebug::instance()->StopClock(DBF_CL_CORE, s, __FILE__, __LINE__)
-#define D(s, vargs...)	CRTDebug::instance()->dprintf_header(DBF_CL_CORE, DBF_GR_CORE, __FILE__, __LINE__, s, ## vargs)
-#define E(s, vargs...)	CRTDebug::instance()->dprintf_header(DBF_CL_CORE, DBF_GR_ERROR, __FILE__, __LINE__, s, ## vargs)
-#define W(s, vargs...)	CRTDebug::instance()->dprintf_header(DBF_CL_CORE, DBF_GR_WARNING, __FILE__, __LINE__, s, ## vargs)
+#define ENTER()					CRTDebug::instance()->Enter(DBC_CTRACE, DEBUG_MODULE, __FILE__, __LINE__, __FUNCTION__)
+#define LEAVE()					CRTDebug::instance()->Leave(DBC_CTRACE, DEBUG_MODULE, __FILE__, __LINE__, __FUNCTION__)
+#define RETURN(r)				CRTDebug::instance()->Return(DBC_CTRACE, DEBUG_MODULE, __FILE__, __LINE__, __FUNCTION__, (long)r)
+#define SHOWVALUE(v)		CRTDebug::instance()->ShowValue(DBC_REPORT, DEBUG_MODULE, (long)v, sizeof(v), #v, __FILE__, __LINE__)
+#define SHOWPOINTER(p)	CRTDebug::instance()->ShowPointer(DBC_REPORT, DEBUG_MODULE, p, #p, __FILE__, __LINE__)
+#define SHOWSTRING(s)		CRTDebug::instance()->ShowString(DBC_REPORT, DEBUG_MODULE, s, #s, __FILE__, __LINE__)
+#define SHOWMSG(m)			CRTDebug::instance()->ShowMessage(DBC_REPORT, DEBUG_MODULE, m, __FILE__, __LINE__)
+#define STARTCLOCK(s)		CRTDebug::instance()->StartClock(DBC_TIMEVAL, DEBUG_MODULE,  s, __FILE__, __LINE__)
+#define STOPCLOCK(s)		CRTDebug::instance()->StopClock(DBC_TIMEVAL, DEBUG_MODULE, s, __FILE__, __LINE__)
+#define D(s, vargs...)	CRTDebug::instance()->dprintf_header(DBC_DEBUG, DEBUG_MODULE, __FILE__, __LINE__, s, ## vargs)
+#define E(s, vargs...)	CRTDebug::instance()->dprintf_header(DBC_ERROR, DEBUG_MODULE, __FILE__, __LINE__, s, ## vargs)
+#define W(s, vargs...)	CRTDebug::instance()->dprintf_header(DBC_WARNING, DEBUG_MODULE, __FILE__, __LINE__, s, ## vargs)
 #define ASSERT(expression)      \
 	((void)                       \
 	 ((expression) ? 0 :          \
 	  (														\
-	   E("failed assertion '%s'",	\
-	    #expression),             \
+	   CRTDebug::instance()->dprintf_header(DBC_ASSERT,		\
+																					DEBUG_MODULE, \
+																					__FILE__,			\
+																					__LINE__,			\
+																					"failed assertion '%s'", #expression), \
 	   abort(),                   \
 	   0                          \
 	  )                           \
 	 )                            \
 	)
-
-// User Class specified debug messages
-#define Debug(c, s, vargs...)		CRTDebug::instance()->dprintf_header(c, DBF_GR_DEBUG,		__FILE__,__LINE__, s, ## vargs) 
-#define Verbose(c, s, vargs...)	CRTDebug::instance()->dprintf_header(c, DBF_GR_VERBOSE, __FILE__,__LINE__, s, ## vargs)
-#define Warning(c, s, vargs...)	CRTDebug::instance()->dprintf_header(c, DBF_GR_WARNING,	__FILE__,__LINE__, s, ## vargs)
-#define Error(c, s, vargs...)		CRTDebug::instance()->dprintf_header(c, DBF_GR_ERROR,		__FILE__,__LINE__, s, ## vargs)
-#define Info(c, s, vargs...)		CRTDebug::instance()->dprintf_header(c, DBF_GR_INFO,		__FILE__,__LINE__, s, ## vargs)
 
 #else // DEBUG
 
@@ -154,12 +154,6 @@
 #define E(s, vargs...)			(void(0))
 #define W(s, vargs...)			(void(0))
 #define ASSERT(expression)	(void(0))
-
-#define Debug(c, s, vargs...)		CRTDebug::instance()->dprintf(c, DBF_GR_DEBUG,		s, ## vargs)
-#define Verbose(c, s, vargs...)	CRTDebug::instance()->dprintf(c, DBF_GR_VERBOSE,	s, ## vargs)
-#define Warning(c, s, vargs...)	CRTDebug::instance()->dprintf(c, DBF_GR_WARNING,	s, ## vargs)
-#define Error(c, s, vargs...)		CRTDebug::instance()->dprintf(c, DBF_GR_ERROR,		s, ## vargs)
-#define Info(c, s, vargs...)		CRTDebug::instance()->dprintf(c, DBF_GR_INFO,			s, ## vargs)
 
 #endif // DEBUG
 #endif // RTDEBUG_H

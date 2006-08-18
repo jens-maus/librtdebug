@@ -4,8 +4,18 @@ RTDebugLib - Runtime Debugging C++ Library
 // vim:set ts=2 nowrap:
 
 $Id$
-$Source$
 
+2005-08-18  Jens Langner <Jens.Langner@light-speed.de>
+
+	* misc: reworked the whole debugging interface to load its debugging
+	  classes/flags via a user-defineable ENV variable. In addition, a
+		filename matching facility has been added to make it also possible
+		to specify a string pattern which, in case it matches, will
+		suppress/show the debugging output in question.
+		Now all debug flags/classes are fully configurable/supressable. In
+		addition source files can be combined into so-called "debug modules"
+		which can also be suppressed or explicitly showed.
+		
 2005-01-27  Jens Langner <Jens.Langner@light-speed.de>
 
   * first internal 1.0 release
