@@ -23,7 +23,6 @@
 
 #include "CRTDebug.h"
 
-#include <pthread.h>
 #include <cstdarg>
 #include <string>
 #include <iostream>
@@ -34,6 +33,10 @@
 #include <cctype>
 
 #include "config.h"
+
+#if defined(HAVE_LIBPTHREAD)
+#include <pthread.h>
+#endif
 
 // define variables for using ANSI colors in our debugging scheme
 #define ANSI_ESC_CLR				"\033[0m"
@@ -79,13 +82,32 @@
 
 // some often used macros to output the thread number at the beginning of each
 // debug output so that we know from which thread this output came.
-#define THREAD_ID						m_ThreadID[pthread_self()]
+#if defined(HAVE_LIBPTHREAD)
+
+#define THREAD_TYPE					pthread_self()
+#define THREAD_ID						m_ThreadID[THREAD_TYPE]
 #define THREAD_WIDTH				2
 #define THREAD_PREFIX				std::setw(THREAD_WIDTH) << std::setfill('0') << THREAD_ID << ": "
 #define THREAD_PREFIX_COLOR	ANSI_ESC_BG << THREAD_ID%6 << "m" << std::setw(THREAD_WIDTH) \
 														<< std::setfill('0') << THREAD_ID << ":" << ANSI_ESC_CLR << " "
-#define THREAD_ID_CHECK			if(m_ThreadID[pthread_self()] == 0)\
-															m_ThreadID[pthread_self()] = ++m_iThreadCount
+#define THREAD_ID_CHECK			if(m_ThreadID[THREAD_TYPE] == 0)\
+															m_ThreadID[THREAD_TYPE] = ++m_iThreadCount
+#define INDENT_OUTPUT				std::string(m_IdentLevel[THREAD_TYPE], ' ')
+#define LOCK_OUTPUTSTREAM		pthread_mutex_lock(&m_pCoutMutex)
+#define UNLOCK_OUTPUTSTREAM	pthread_mutex_unlock(&m_pCoutMutex)
+
+#else
+
+#define THREAD_TYPE					0
+#define THREAD_PREFIX				""
+#define THREAD_PREFIX_COLOR	""
+#define THREAD_ID_CHECK			(void(0))
+#define INDENT_OUTPUT				std::string(m_IdentLevel[THREAD_TYPE], ' ')
+#define LOCK_OUTPUTSTREAM		(void(0))
+#define UNLOCK_OUTPUTSTREAM	(void(0))
+
+#warning "no pthread library found/supported. librtdebug is compiled without being thread-safe!"
+#endif
 
 // some systems doesn't have the MICROSEC macros
 #ifndef MICROSEC
@@ -353,7 +375,9 @@ CRTDebug::CRTDebug(const int dbclasses, const int dbflags)
 		m_iDebugFlags(dbflags),
 		m_iThreadCount(0)
 {
+	#if defined(HAVE_LIBPTHREAD)
 	pthread_mutex_init(&m_pCoutMutex, NULL);
+	#endif
 
 	// now we see if we have to apply some default settings or not.
 	if(m_iDebugClasses == 0)
@@ -373,7 +397,9 @@ CRTDebug::CRTDebug(const int dbclasses, const int dbflags)
 ////////////////////////////////////////////////////////////////////////////////
 CRTDebug::~CRTDebug()
 {
+	#if defined(HAVE_LIBPTHREAD)
 	pthread_mutex_destroy(&m_pCoutMutex);
+	#endif
 
 	std::cout << "*** rtdebug framework shutdowned *********************************************" << std::endl;	
 }
@@ -399,31 +425,34 @@ void CRTDebug::Enter(const int c, const char* m, const char* file, long line,
 	if(matchDebugSpec(c, m, file) == false)
 		return;
 	
-	pthread_mutex_lock(&m_pCoutMutex);
-
+	// lock the output stream
+	LOCK_OUTPUTSTREAM;
+	
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
 	THREAD_ID_CHECK;
 	
 	if(m_bHighlighting)
 	{
-		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_CTRACE_COLOR
+		std::cout << THREAD_PREFIX_COLOR
+						  << INDENT_OUTPUT << DBC_CTRACE_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
 							<< std::dec << line << ":Entering " << function << "()"
 							<< ANSI_ESC_CLR << std::endl;
 	}
 	else
 	{
-		std::cout << THREAD_PREFIX;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ')
+		std::cout << THREAD_PREFIX
+							<< INDENT_OUTPUT
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
 							<< std::dec << line << ":Entering " << function << "()" << std::endl;
 	}
 
-	pthread_mutex_unlock(&m_pCoutMutex);
+	// unlock the output stream
+	UNLOCK_OUTPUTSTREAM;
 
-  m_IdentLevel[pthread_self()] = m_IdentLevel[pthread_self()] + 1;
+	// increase the indention level
+  m_IdentLevel[THREAD_TYPE] = m_IdentLevel[THREAD_TYPE] + 1;
 }
 
 //  Class:       CRTDebug
@@ -447,10 +476,11 @@ void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
 	if(matchDebugSpec(c, m, file) == false)
 		return;
 	
-	if(m_IdentLevel[pthread_self()] > 0)
-		m_IdentLevel[pthread_self()]--;
+	if(m_IdentLevel[THREAD_TYPE] > 0)
+		m_IdentLevel[THREAD_TYPE]--;
 
-	pthread_mutex_lock(&m_pCoutMutex);
+	// lock the output stream
+	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
@@ -458,21 +488,22 @@ void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
 	
 	if(m_bHighlighting)
 	{
-		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_CTRACE_COLOR
+		std::cout << THREAD_PREFIX_COLOR
+							<< INDENT_OUTPUT << DBC_CTRACE_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
 							<< std::dec << line << ":Leaving " << function << "()"
 							<< ANSI_ESC_CLR << std::endl;
 	}
 	else
 	{
-		std::cout << THREAD_PREFIX;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ')
+		std::cout << THREAD_PREFIX
+						  << INDENT_OUTPUT
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
 							<< std::dec << line << ":Leaving " << function << "()" << std::endl;
 	}
 
-	pthread_mutex_unlock(&m_pCoutMutex);
+	// unlock the output stream
+	UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
@@ -497,10 +528,11 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 	if(matchDebugSpec(c, m, file) == false)
 		return;
 	
-  if(m_IdentLevel[pthread_self()] > 0)
-		m_IdentLevel[pthread_self()]--;
+  if(m_IdentLevel[THREAD_TYPE] > 0)
+		m_IdentLevel[THREAD_TYPE]--;
 
-	pthread_mutex_lock(&m_pCoutMutex);
+	// lock the output stream
+	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
@@ -508,8 +540,8 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 	
 	if(m_bHighlighting)
 	{
-		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_CTRACE_COLOR
+		std::cout << THREAD_PREFIX_COLOR
+						  << INDENT_OUTPUT << DBC_CTRACE_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
 							<< std::dec << line << ":Leaving " << function << "() (result 0x"
 							<< std::hex << std::setw(8) << std::setfill('0') << result << ", "
@@ -517,15 +549,16 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 	}
 	else
 	{
-		std::cout << THREAD_PREFIX;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ')
+		std::cout << THREAD_PREFIX
+							<< INDENT_OUTPUT
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
 							<< std::dec << line << ":Leaving " << function << "() (result 0x"
 							<< std::hex << std::setw(8) << std::setfill('0') << result << ", "
 							<< std::dec << result << ")" << std::endl;
 	}
 
-	pthread_mutex_unlock(&m_pCoutMutex);
+	// unlock the output stream
+	UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
@@ -552,7 +585,8 @@ void CRTDebug::ShowValue(const int c, const char* m, long value, int size,
 	if(matchDebugSpec(c, m, file) == false)
 		return;
 	
-	pthread_mutex_lock(&m_pCoutMutex);
+	// lock the output stream
+	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
@@ -560,8 +594,8 @@ void CRTDebug::ShowValue(const int c, const char* m, long value, int size,
 	
 	if(m_bHighlighting)
 	{
-		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_REPORT_COLOR
+		std::cout << THREAD_PREFIX_COLOR
+							<< INDENT_OUTPUT << DBC_REPORT_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << name << " = " << value
 							<< ", 0x" << std::hex << std::setw(size*2) << std::setfill('0')
@@ -569,8 +603,8 @@ void CRTDebug::ShowValue(const int c, const char* m, long value, int size,
 	}
 	else
 	{
-		std::cout << THREAD_PREFIX;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ')
+		std::cout << THREAD_PREFIX
+						  << INDENT_OUTPUT
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << name << " = " << value
 							<< ", 0x" << std::hex << std::setw(size*2) << std::setfill('0')
@@ -590,11 +624,13 @@ void CRTDebug::ShowValue(const int c, const char* m, long value, int size,
 		}
 	}
 
-	if(m_bHighlighting) std::cout << ANSI_ESC_CLR;
+	if(m_bHighlighting)
+		std::cout << ANSI_ESC_CLR;
 
 	std::cout << std::endl;
 
-	pthread_mutex_unlock(&m_pCoutMutex);
+	// unlock the output stream
+	UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
@@ -618,7 +654,8 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
 	if(matchDebugSpec(c, m, file) == false)
 		return;
 	
-	pthread_mutex_lock(&m_pCoutMutex);
+	// lock the output stream
+	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
@@ -626,15 +663,15 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
 	
 	if(m_bHighlighting)
 	{
-		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_REPORT_COLOR
+		std::cout << THREAD_PREFIX_COLOR
+						  << INDENT_OUTPUT << DBC_REPORT_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << name << " = ";
 	}
 	else
 	{
-		std::cout << THREAD_PREFIX;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ')
+		std::cout << THREAD_PREFIX
+							<< INDENT_OUTPUT
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << name << " = ";
 	}
@@ -649,7 +686,8 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
 	
 	std::cout << std::endl;
 
-	pthread_mutex_unlock(&m_pCoutMutex);
+	// unlock the output stream
+	UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
@@ -676,7 +714,8 @@ void CRTDebug::ShowString(const int c, const char* m, const char* string,
 	if(matchDebugSpec(c, m, file) == false)
 		return;
 	
-	pthread_mutex_lock(&m_pCoutMutex);
+	// lock the output stream
+	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
@@ -684,8 +723,8 @@ void CRTDebug::ShowString(const int c, const char* m, const char* string,
 	
 	if(m_bHighlighting)
 	{
-		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_REPORT_COLOR
+		std::cout << THREAD_PREFIX_COLOR
+							<< INDENT_OUTPUT << DBC_REPORT_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << name << " = 0x" << std::hex
 							<< std::setw(8) << std::setfill('0') << string << " \""
@@ -693,15 +732,16 @@ void CRTDebug::ShowString(const int c, const char* m, const char* string,
 	}
 	else
 	{
-		std::cout << THREAD_PREFIX;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ')
+		std::cout << THREAD_PREFIX
+							<< INDENT_OUTPUT
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << name << " = 0x" << std::hex
 							<< std::setw(8) << std::setfill('0') << string << " \""
 							<< string << "\"" << std::endl;
 	}
 
-	pthread_mutex_unlock(&m_pCoutMutex);
+	// unlock the output stream
+	UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
@@ -725,7 +765,8 @@ void CRTDebug::ShowMessage(const int c, const char* m, const char* string,
 	if(matchDebugSpec(c, m, file) == false)
 		return;
 	
-	pthread_mutex_lock(&m_pCoutMutex);
+	// lock the output stream
+	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
@@ -733,21 +774,22 @@ void CRTDebug::ShowMessage(const int c, const char* m, const char* string,
 	
 	if(m_bHighlighting)
 	{
-		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_REPORT_COLOR
+		std::cout << THREAD_PREFIX_COLOR
+							<< INDENT_OUTPUT << DBC_REPORT_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << ANSI_ESC_CLR
 							<< std::endl;
 	}
 	else
 	{
-		std::cout << THREAD_PREFIX;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') 
+		std::cout << THREAD_PREFIX
+							<< INDENT_OUTPUT 
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << std::endl;
 	}
 	
-	pthread_mutex_unlock(&m_pCoutMutex);
+	// unlock the output stream
+	UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
@@ -774,7 +816,7 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 		return;
 	
 	// lets get the current time of the day
-	struct timeval* tp = &m_TimeMeasure[pthread_self()];
+	struct timeval* tp = &m_TimeMeasure[THREAD_TYPE];
 	if(gettimeofday(tp, NULL) != 0)
 		return;
 
@@ -790,7 +832,8 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 	char formattedTime[40];
 	snprintf(&formattedTime[0], 40, "%s'%03d", buf, (int)((starttime-((int)starttime))*1000.0));
 
-	pthread_mutex_lock(&m_pCoutMutex);
+	// lock the output stream
+	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
@@ -798,22 +841,23 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 	
 	if(m_bHighlighting)
 	{
-		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_TIMEVAL_COLOR
+		std::cout << THREAD_PREFIX_COLOR
+							<< INDENT_OUTPUT << DBC_TIMEVAL_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << " started@"
 							<< formattedTime << ANSI_ESC_CLR << std::endl;
 	}
 	else
 	{
-		std::cout << THREAD_PREFIX;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') 
+		std::cout << THREAD_PREFIX
+							<< INDENT_OUTPUT 
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << " started@"
 							<< formattedTime << std::endl;
 	}
 	
-	pthread_mutex_unlock(&m_pCoutMutex);
+	// unlock the output stream
+	UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
@@ -844,7 +888,7 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 		return;
 
 	// now we calculate the timedifference
-	struct timeval* oldtp = &m_TimeMeasure[pthread_self()];
+	struct timeval* oldtp = &m_TimeMeasure[THREAD_TYPE];
 	struct timeval	difftp;
 	difftp.tv_sec		= newtp.tv_sec - oldtp->tv_sec;
 	difftp.tv_usec	= newtp.tv_usec - oldtp->tv_usec;
@@ -867,7 +911,8 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	char formattedTime[40];
 	snprintf(&formattedTime[0], 40, "%s'%03d", buf, (int)((stoptime-((int)stoptime))*1000.0));
 
-	pthread_mutex_lock(&m_pCoutMutex);
+	// lock the output stream
+	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
@@ -875,8 +920,8 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	
 	if(m_bHighlighting)
 	{
-		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << DBC_TIMEVAL_COLOR
+		std::cout << THREAD_PREFIX_COLOR
+							<< INDENT_OUTPUT << DBC_TIMEVAL_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << " stopped@"
 							<< formattedTime << " = " << std::fixed << std::setprecision(3) << difftime << "s"
@@ -884,15 +929,16 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	}
 	else
 	{
-		std::cout << THREAD_PREFIX;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') 
+		std::cout << THREAD_PREFIX
+							<< INDENT_OUTPUT 
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << " stopped@"
 							<< formattedTime << " = " << std::fixed << std::setprecision(3) << difftime << "s"
 							<< std::endl;
 	}
 	
-	pthread_mutex_unlock(&m_pCoutMutex);
+	// unlock the output stream
+	UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
@@ -925,7 +971,8 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 	vsnprintf(buf, 1024, fmt, args);
 	va_end(args);
 
-	pthread_mutex_lock(&m_pCoutMutex);
+	// lock the output stream
+	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
@@ -942,22 +989,23 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 			default:					highlight = ANSI_ESC_FG_WHITE;	break;
 		}
 
-		std::cout << THREAD_PREFIX_COLOR;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ') << highlight
+		std::cout << THREAD_PREFIX_COLOR
+							<< INDENT_OUTPUT << highlight
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << buf << ANSI_ESC_CLR
 							<< std::endl;
 	}
 	else
 	{
-		std::cout << THREAD_PREFIX;
-		std::cout << std::string(m_IdentLevel[pthread_self()], ' ')
+		std::cout << THREAD_PREFIX
+							<< INDENT_OUTPUT
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << buf
 							<< std::endl;
 	}
 
-	pthread_mutex_unlock(&m_pCoutMutex);
+	// unlock the output stream
+	UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
@@ -987,7 +1035,8 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
 	vsnprintf(buf, 1024, fmt, args);
 	va_end(args);
 
-	pthread_mutex_lock(&m_pCoutMutex);
+	// lock the output stream
+	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
@@ -1029,7 +1078,8 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
 
 	std::cout << buf << ANSI_ESC_CLR << std::endl;
 
-	pthread_mutex_unlock(&m_pCoutMutex);
+	// unlock the output stream
+	UNLOCK_OUTPUTSTREAM;
 }
 
 unsigned int CRTDebug::debugClasses() const

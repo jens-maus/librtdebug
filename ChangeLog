@@ -7,6 +7,9 @@ $Id$
 
 2005-08-18  Jens Langner <Jens.Langner@light-speed.de>
 
+	* CRTDebug.cpp: in case no pthread library is found librtdebug will
+		now be compiled in "single-threaded" mode instead of refusing to
+		compile at all.
 	* misc: reworked the whole debugging interface to load its debugging
 	  classes/flags via a user-defineable ENV variable. In addition, a
 		filename matching facility has been added to make it also possible

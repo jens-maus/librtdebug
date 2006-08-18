@@ -38,6 +38,9 @@ AC_MSG_CHECKING(for host system processor type)
 AC_SUBST(HOST_CPU, `uname -p`)
 AC_MSG_RESULT(${HOST_CPU})
 
+# check if the user wants to have ansi color output
+AC_ANSI_COLOR
+
 # Checks for programs.
 AC_PROG_CXX
 AC_GNU_SOURCE
@@ -54,6 +57,11 @@ AC_ANSI_COLOR
 
 # checking gcc version
 AC_PROG_GCC_VERSION
+
+# Checks for library functions.
+AC_FUNC_MALLOC
+AC_CHECK_FUNCS([gettimeofday])
+AC_CHECK_GETTICKCOUNT
 
 # Checks for some tools which we need
 AC_PATH_PROG(QMAKE_PATH, qmake, no, [$PATH:$QTDIR/bin:/usr/qt/bin:/usr/local/qt/bin:/Developer/qt/bin])
@@ -80,9 +88,6 @@ AC_CXX_STATIC_CAST
 AC_C_CONST
 AC_HEADER_TIME
 AC_STRUCT_TM
-
-# Checks for library functions.
-AC_FUNC_MALLOC
 
 AC_PROG_MAKE_SET
 
