@@ -5,7 +5,12 @@ RTDebugLib - Runtime Debugging C++ Library
 
 $Id$
 
-2005-08-18  Jens Langner <Jens.Langner@light-speed.de>
+2006-08-25  Jens Langner <Jens.Langner@light-speed.de>
+
+	* CRTDebug.cpp: we use GetTickCount() on systems not supporting
+		gettimeofday().
+
+2006-08-18  Jens Langner <Jens.Langner@light-speed.de>
 
 	* CRTDebug.cpp: in case no pthread library is found librtdebug will
 		now be compiled in "single-threaded" mode instead of refusing to

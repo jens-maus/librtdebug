@@ -816,12 +816,19 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 		return;
 	
 	// lets get the current time of the day
+	#if defined(HAVE_GETTIMEOFDAY)
 	struct timeval* tp = &m_TimeMeasure[THREAD_TYPE];
 	if(gettimeofday(tp, NULL) != 0)
 		return;
 
 	// convert the timeval in some human readable format
-	double starttime = (double)tp->tv_sec + ((double)tp->tv_usec/(double)MICROSEC);
+	double starttime = static_cast<double>(tp->tv_sec) + (static_cast<double>(tp->tv_usec)/MICROSEC);
+	#elif defined(HAVE_GETTICKCOUNT)
+	double starttime = static_cast<double>(GetTickCount()) / MICROSEC;
+	#else
+	double starttime = 0.0;
+	#warning "no supported time measurement function found!"
+	#endif
 
 	// now we convert that starttime to something human readable
 	struct tm brokentime;
