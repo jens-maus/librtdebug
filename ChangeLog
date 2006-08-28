@@ -5,8 +5,17 @@ RTDebugLib - Runtime Debugging C++ Library
 
 $Id$
 
+#### 2.0 RELEASE ##########################################################
+
+2006-08-28  Jens Langner <Jens.Langner@light-speed.de>
+
+	* CRTDebug.cpp,h: moved all private data into an internal-only private
+		inline class "CRTDebugPrivate" which we might enhance in future
+		without having to expose it to the public.
+
 2006-08-25  Jens Langner <Jens.Langner@light-speed.de>
 
+	* misc: version bump due to changed library interface
 	* CRTDebug.cpp: we use GetTickCount() on systems not supporting
 		gettimeofday().
 
@@ -23,7 +32,9 @@ $Id$
 		Now all debug flags/classes are fully configurable/supressable. In
 		addition source files can be combined into so-called "debug modules"
 		which can also be suppressed or explicitly showed.
-		
+
+#### 1.0 RELEASE ##########################################################
+
 2005-01-27  Jens Langner <Jens.Langner@light-speed.de>
 
   * first internal 1.0 release

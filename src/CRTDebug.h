@@ -24,9 +24,6 @@
 #ifndef CRTDEBUG_H
 #define CRTDEBUG_H
 
-#include <map>
-#include <pthread.h>
-
 // debug classes
 #define DBC_CTRACE		(1<<0) // call tracing (ENTER/LEAVE etc.)
 #define DBC_REPORT		(1<<1) // reports (SHOWVALUE/SHOWSTRING etc.)
@@ -45,6 +42,9 @@
 // debug modules
 #define DBM_NONE			NULL
 #define DBM_ALL				"all"
+
+// forward declarations
+class CRTDebugPrivate;
 
 //  Classname:   CRTDebug
 //! @brief debugging purpose class
@@ -109,29 +109,28 @@ class CRTDebug
 		// general public methods to control debug class
 		unsigned int debugClasses() const;
 		unsigned int debugFlags() const;
+		const char* debugFiles() const;
+		const char* debugModules() const;
+		void setDebugClass(unsigned int cl);
+		void setDebugFlag(unsigned int fl);
+		void setDebugFile(const char* filename, bool show);
+		void setDebugModule(const char* module, bool show);
+		void clearDebugClass(unsigned int cl);
+		void clearDebugFlag(unsigned int fl);
+		void clearDebugFile(const char* filename);
+		void clearDebugModule(const char* module);
+
+		// methods to control additional options
 		bool highlighting() const;
-		void setDebugClasses(unsigned int classes);
-		void setDebugFlags(unsigned int flags);
 		void setHighlighting(bool on);
 		
 	protected:
 		CRTDebug(const int dbclasses=0, const int dbflags=0);
 		~CRTDebug();
 
-		bool matchDebugSpec(const int cl, const char* module, const char* file);
-	
 	private:
-		static CRTDebug*										m_pSingletonInstance;	//!< the singleton instance
-		std::map<pthread_t, unsigned int>		m_ThreadID;						//!< thread identification number
-		std::map<pthread_t, unsigned int>		m_IdentLevel;					//!< different ident levels for different threads
-		std::map<pthread_t, struct timeval>	m_TimeMeasure;				//!< for measuring the time we need more structs
-		bool																m_bHighlighting;			//!< text ANSI highlighting?
-		pthread_mutex_t											m_pCoutMutex;					//!< a mutex to sync cout output
-		unsigned int												m_iDebugClasses;			//!< the currently active debug classes
-		std::map<std::string, bool>					m_DebugModules;				//!< to map actual specified debug modules
-		std::map<std::string, bool>					m_DebugFiles;					//!< to map actual specified source file names
-		unsigned int												m_iDebugFlags;				//!< the currently active debug flags
-		unsigned int												m_iThreadCount;				//!< counter of total number of threads processing
+		static CRTDebug*	m_pSingletonInstance;	//!< the singleton instance
+		CRTDebugPrivate*	m_pData;							//!< the private, internal rtdebug data
 };
 
 #endif // CRTDEBUG_H
