@@ -5,6 +5,11 @@ RTDebugLib - Runtime Debugging C++ Library
 
 $Id$
 
+2006-09-08  Jens Langner <Jens.Langner@light-speed.de>
+
+	* examples: added new examples directory for preparing some small, minor
+		examples on how to use rtdebug within own projects.
+
 #### 2.0 RELEASE ##########################################################
 
 2006-08-28  Jens Langner <Jens.Langner@light-speed.de>
