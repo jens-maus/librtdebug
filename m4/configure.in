@@ -22,7 +22,7 @@
 #***************************************************************************/
 
 AC_PREREQ(2.57)
-AC_INIT(rtdebug, 2.0, Jens.Langner@light-speed.de)
+AC_INIT(rtdebug, 2.0.1)
 AC_COPYRIGHT(Copyright (c) 2003-2006 by Jens Langner <Jens.Langner@light-speed.de>)
 AC_REVISION($Revision$)
 AC_CONFIG_SRCDIR([src])

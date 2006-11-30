@@ -865,7 +865,7 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 
 	// now we convert that starttime to something human readable
 	struct tm brokentime;
-	time_t curTime = (time_t)starttime;
+	time_t curTime = tp->tv_sec+(tp->tv_usec/MICROSEC);
 	localtime_r(&curTime, &brokentime);
 	char buf[10];
 	strftime(&buf[0], 10, "%T", &brokentime);
@@ -923,9 +923,15 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 		return;
 	
 	// lets get the current time of the day
-	struct timeval	newtp;
+	struct timeval newtp;
+	#if defined(HAVE_GETTIMEOFDAY)
 	if(gettimeofday(&newtp, NULL) != 0)
 		return;
+	#elif defined(HAVE_GETTICKCOUNT)
+	newtp.tv_sec = GetTickCount();
+	newtp.tv_usec = 0;
+	#warning "no supported time measurement function found!"
+	#endif
 
 	// now we calculate the timedifference
 	struct timeval* oldtp = &(m_pData->m_TimeMeasure[THREAD_TYPE]);
@@ -944,7 +950,7 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 
 	// now we convert that starttime to something human readable
 	struct tm brokentime;
-	time_t curTime = (time_t)stoptime;
+	time_t curTime = newtp.tv_sec+(newtp.tv_usec/MICROSEC);
 	localtime_r(&curTime, &brokentime);
 	char buf[10];
 	strftime(&buf[0], 10, "%T", &brokentime);

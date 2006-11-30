@@ -126,8 +126,17 @@ else {
 }
 
 # use ANSI colors if it was specified on configure time
-ansi_color {
-	QMAKE_CXX		= @printf '\033[32mCompiling $<\033[0m\n';$$QMAKE_CXX
-	QMAKE_LINK	= @printf '\033[32mLinking \033[1m$@\033[0m\n';$$QMAKE_LINK
-	DEFINES += ANSI_COLOR
+!win32 {
+	ansi_color {
+		QMAKE_CXX = @printf \'\033[32mCompiling $<\033[0m\n\'; $$QMAKE_CXX
+		QMAKE_LINK = @printf \'\033[32mLinking \033[1m$@\033[0m\n\'; $$QMAKE_LINK
+		QMAKE_MOC = @printf \'\033[33mGenerating $@\033[0m\n\'; $$QMAKE_MOC	
+		DEFINES *= ANSI_COLOR
+	}
+	else {
+		QMAKE_CXX		= @echo \'Compiling $<\'; $$QMAKE_CXX
+		QMAKE_LINK	= @echo \'Linking $@\'; $$QMAKE_LINK
+		QMAKE_LINK  = @echo \'Generating $@\'; $$QMAKE_MOC
+		DEFINES -= ANSI_COLOR
+	}
 }

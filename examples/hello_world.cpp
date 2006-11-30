@@ -64,8 +64,14 @@ int main(int argc, char* argv[])
 	// we delay the first function entry marker because of ::init()
 	ENTER();
 
+	// we measure the time of the execution from here on
+	STARTCLOCK("output() measurement");
+
 	// now we branch into the output() function
 	output("Hello to rtDebug!");
+
+	// signal that we are finished
+	STOPCLOCK("output() measurement");
 
 	// before we really exit the main function we have to
 	// use RETURN() to report the return value to the debug framework

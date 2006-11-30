@@ -1,9 +1,14 @@
------------------------------------------------
+------------------------------------------
 RTDebugLib - Runtime Debugging C++ Library
------------------------------------------------
+------------------------------------------
 // vim:set ts=2 nowrap:
 
 $Id$
+
+2006-11-30  Jens Langner <Jens.Langner@light-speed.de>
+
+	* CRTDebug.c: fixed the STARTCLOCK()/STOPCLOCK() functionality as it was
+	  outputting incorrect time values which where quiet confusing.
 
 2006-09-08  Jens Langner <Jens.Langner@light-speed.de>
 
