@@ -110,13 +110,9 @@
 #warning "no pthread library found/supported. librtdebug is compiled without being thread-safe!"
 #endif
 
-// some systems doesn't have the MICROSEC macros
-#ifndef MICROSEC
-#define MICROSEC 1000
-#endif
-#ifndef MILLISEC
-#define MILLISEC 1000000
-#endif
+// define how MICRO and MILLI are related to normal
+#define MILLISEC 1000			// 10^-3
+#define MICROSEC 1000000	// 10^-6
 
 // we define the private inline class of that one so that we
 // are able to hide the private methods & data of that class in the
@@ -870,7 +866,7 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 	char buf[10];
 	strftime(&buf[0], 10, "%T", &brokentime);
 	char formattedTime[40];
-	snprintf(&formattedTime[0], 40, "%s'%03d", buf, (int)((starttime-((int)starttime))*1000.0));
+	snprintf(&formattedTime[0], sizeof(formattedTime), "%s'%03d", buf, (int)((starttime-((int)starttime))*MILLISEC));
 
 	// lock the output stream
 	LOCK_OUTPUTSTREAM;
@@ -955,7 +951,7 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	char buf[10];
 	strftime(&buf[0], 10, "%T", &brokentime);
 	char formattedTime[40];
-	snprintf(&formattedTime[0], 40, "%s'%03d", buf, (int)((stoptime-((int)stoptime))*1000.0));
+	snprintf(&formattedTime[0], sizeof(formattedTime), "%s'%03d", buf, (int)((stoptime-((int)stoptime))*MILLISEC));
 
 	// lock the output stream
 	LOCK_OUTPUTSTREAM;
