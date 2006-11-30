@@ -851,22 +851,21 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 		return;
 
 	// convert the timeval in some human readable format
-	double starttime = static_cast<double>(tp->tv_sec) + (static_cast<double>(tp->tv_usec)/MICROSEC);
+	time_t starttime = tp->tv_sec + (tp->tv_usec/MICROSEC);
 	#elif defined(HAVE_GETTICKCOUNT)
-	double starttime = static_cast<double>(GetTickCount()) / MICROSEC;
+	time_t starttime = GetTickCount() / MILLISEC;
 	#else
-	double starttime = 0.0;
+	time_t starttime = 0.0;
 	#warning "no supported time measurement function found!"
 	#endif
 
 	// now we convert that starttime to something human readable
 	struct tm brokentime;
-	time_t curTime = tp->tv_sec+(tp->tv_usec/MICROSEC);
-	localtime_r(&curTime, &brokentime);
+	localtime_r(&starttime, &brokentime);
 	char buf[10];
 	strftime(&buf[0], 10, "%T", &brokentime);
 	char formattedTime[40];
-	snprintf(&formattedTime[0], sizeof(formattedTime), "%s'%03d", buf, (int)((starttime-((int)starttime))*MILLISEC));
+	snprintf(&formattedTime[0], sizeof(formattedTime), "%s'%03ld", buf, (tp->tv_usec-((tp->tv_usec/MICROSEC)*MICROSEC))/MILLISEC);
 
 	// lock the output stream
 	LOCK_OUTPUTSTREAM;
@@ -924,7 +923,7 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	if(gettimeofday(&newtp, NULL) != 0)
 		return;
 	#elif defined(HAVE_GETTICKCOUNT)
-	newtp.tv_sec = GetTickCount();
+	newtp.tv_sec = GetTickCount() / MILLISEC;
 	newtp.tv_usec = 0;
 	#warning "no supported time measurement function found!"
 	#endif
@@ -937,21 +936,20 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	if(difftp.tv_usec < 0)
 	{
 		difftp.tv_sec--;
-		difftp.tv_usec += 1000000;
+		difftp.tv_usec += MICROSEC;
   }
 
 	// convert the actual and diff time in a human readable format
-	double stoptime = (double)newtp.tv_sec + ((double)newtp.tv_usec/(double)MICROSEC);
-	double difftime = (double)difftp.tv_sec + ((double)difftp.tv_usec/(double)MICROSEC);
+	time_t stoptime = newtp.tv_sec + (newtp.tv_usec/MICROSEC);
+	float difftime = (float)difftp.tv_sec + ((float)difftp.tv_usec/(float)MICROSEC);
 
 	// now we convert that starttime to something human readable
 	struct tm brokentime;
-	time_t curTime = newtp.tv_sec+(newtp.tv_usec/MICROSEC);
-	localtime_r(&curTime, &brokentime);
+	localtime_r(&stoptime, &brokentime);
 	char buf[10];
 	strftime(&buf[0], 10, "%T", &brokentime);
 	char formattedTime[40];
-	snprintf(&formattedTime[0], sizeof(formattedTime), "%s'%03d", buf, (int)((stoptime-((int)stoptime))*MILLISEC));
+	snprintf(&formattedTime[0], sizeof(formattedTime), "%s'%03ld", buf, (newtp.tv_usec-((newtp.tv_usec/MICROSEC)*MICROSEC))/MILLISEC);
 
 	// lock the output stream
 	LOCK_OUTPUTSTREAM;
