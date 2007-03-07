@@ -4,10 +4,16 @@ RTDebugLib - Runtime Debugging C++ Library
 // vim:set ts=2 nowrap:
 
 $Id$
+$URL$
+
+2007-03-07  Jens Langner <Jens.Langner@light-speed.de>
+
+   * CRTDebug.c: exchanged the colors for DEBUG and REPORT output. DEBUG
+     output should now be green and reports be outputted in purple instead.
 
 2006-11-30  Jens Langner <Jens.Langner@light-speed.de>
 
-	* CRTDebug.c: Now the the time calculations should finally be correct. I
+	* CRTDebug.c: Now the time calculations should finally be correct. I
      really can't believe how easy it is/was to mix up milli with micro :)
 	* CRTDebug.c: fixed the STARTCLOCK()/STOPCLOCK() functionality as it was
 	  outputting incorrect time values which where quiet confusing.
