@@ -6,6 +6,11 @@ RTDebugLib - Runtime Debugging C++ Library
 $Id$
 $URL$
 
+2007-03-19  Jens Langner <Jens.Langner@light-speed.de>
+
+   * CRTDebug.c: added DBC_TIMEVAL to the default debugging classes in case
+     no debugging variable is found during init.
+
 2007-03-07  Jens Langner <Jens.Langner@light-speed.de>
 
    * CRTDebug.c: exchanged the colors for DEBUG and REPORT output. DEBUG

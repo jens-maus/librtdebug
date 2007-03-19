@@ -262,7 +262,7 @@ void CRTDebug::init(const char* variable)
 					// class definition
 					case '@':
 					{
-						static const struct { char* token; unsigned int flag; } dbclasses[] =
+						static const struct { const char* token; const unsigned int flag; } dbclasses[] =
 						{
 							{ "ctrace",	DBC_CTRACE	},
 							{ "report", DBC_REPORT  },
@@ -293,7 +293,7 @@ void CRTDebug::init(const char* variable)
 					// flags definition
 					case '+':
 					{
-						static const struct { char* token; unsigned int flag; } dbflags[] =
+						static const struct { const char* token; const unsigned int flag; } dbflags[] =
 						{
 							{ "always",	DBF_ALWAYS	},
 							{ "startup",DBF_STARTUP },
@@ -410,7 +410,7 @@ CRTDebug::CRTDebug(const int dbclasses, const int dbflags)
 
 	// now we see if we have to apply some default settings or not.
 	if(m_pData->m_iDebugClasses == 0)
-		m_pData->m_iDebugClasses = DBC_ERROR | DBC_DEBUG | DBC_WARNING | DBC_ASSERT | DBC_REPORT;
+		m_pData->m_iDebugClasses = DBC_ERROR | DBC_DEBUG | DBC_WARNING | DBC_ASSERT | DBC_REPORT | DBC_TIMEVAL;
 
 	if(m_pData->m_iDebugFlags == 0)
 		m_pData->m_iDebugFlags = DBF_ALWAYS | DBF_STARTUP; 
