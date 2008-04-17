@@ -23,7 +23,7 @@
 
 # main variables
 TEMPLATE  = lib
-CONFIG	 *= warn_on @ANSI_COLOR@ @QTLINK_LEVEL@
+CONFIG	 *= warn_on create_prl @ANSI_COLOR@ @QTLINK_LEVEL@
 QT				=
 TARGET    = rtdebug
 VERSION   = @PACKAGE_VERSION@
@@ -75,6 +75,13 @@ unix {
   # "make install" configuration options
   INSTALLS += target include documentation
 }
+
+# mac specific options to build universal
+# binaries 
+mac {      
+  CONFIG += x86 ppc
+  QMAKE_MAC_SDK=/Developer/SDKs/MacOSX10.4u.sdk
+}          
 
 # own QMAKE Flags definitions
 QMAKE_CXXFLAGS_RELEASE	= @CXXFLAGS@
