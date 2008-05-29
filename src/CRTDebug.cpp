@@ -1020,7 +1020,7 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 	
 	if(m_pData->m_bHighlighting)
 	{
-		char *highlight;
+		const char *highlight;
 		switch(c)
 		{
 			case DBC_DEBUG:		highlight = DBC_DEBUG_COLOR;		break;
