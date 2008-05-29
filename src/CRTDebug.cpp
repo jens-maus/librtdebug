@@ -111,8 +111,8 @@
 #endif
 
 // define how MICRO and MILLI are related to normal
-#define MILLISEC 1000			// 10^-3
-#define MICROSEC 1000000	// 10^-6
+#define MILLISEC 1000L		// 10^-3
+#define MICROSEC 1000000L	// 10^-6
 
 // we define the private inline class of that one so that we
 // are able to hide the private methods & data of that class in the
