@@ -8,6 +8,8 @@ $URL$
 
 2008-06-03  Jens Langner <Jens.Langner@light-speed.de>
 
+   * CRTDebug.c: added va_copy() usage to make the new dynamic allocation
+     for non-vasprintf() systems more safe.
    * CRTDebug.c: added alternative implementation for the dynamic string
      allocation in case a system does not have any vasprintf() function.
    * CRTDebug.c: changed the vsnprintf() usage to use vasprintf() instead.

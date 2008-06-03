@@ -1013,9 +1013,12 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
   #if defined(HAVE_VASPRINTF)
 	vasprintf(&buf, fmt, args);
   #else
-  int ret = vsnprintf(NULL, 0, fmt, args);
+  va_list ac;
+  va_copy(ac, args);
+  int ret = vsnprintf(NULL, 0, fmt, ac);
   buf = (char *)malloc(ret+1);
-  vsnprintf(buf, ret+1, fmt, args);
+  va_copy(ac, args);
+  vsnprintf(buf, ret+1, fmt, ac);
   #endif
 	va_end(args);
 
@@ -1088,9 +1091,12 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
   #if defined(HAVE_VASPRINTF)
 	vasprintf(&buf, fmt, args);
   #else
-  int ret = vsnprintf(NULL, 0, fmt, args);
+  va_list ac;
+  va_copy(ac, args);
+  int ret = vsnprintf(NULL, 0, fmt, ac);
   buf = (char *)malloc(ret+1);
-  vsnprintf(buf, ret+1, fmt, args);
+  va_copy(ac, args);
+  vsnprintf(buf, ret+1, fmt, ac);
   #endif
 	va_end(args);
 
