@@ -114,6 +114,8 @@
 #define MILLISEC 1000L		// 10^-3
 #define MICROSEC 1000000L	// 10^-6
 
+#define STRINGSIZE 10000
+
 // we define the private inline class of that one so that we
 // are able to hide the private methods & data of that class in the
 // public headers
@@ -1013,12 +1015,8 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
   #if defined(HAVE_VASPRINTF)
 	vasprintf(&buf, fmt, args);
   #else
-  va_list ac;
-  va_copy(ac, args);
-  int ret = vsnprintf(NULL, 0, fmt, ac);
-  buf = (char *)malloc(ret+1);
-  va_copy(ac, args);
-  vsnprintf(buf, ret+1, fmt, ac);
+  buf = (char *)malloc(STRINGSIZE);
+  vsnprintf(buf, STRINGSIZE, fmt, args);
   #endif
 	va_end(args);
 
@@ -1091,12 +1089,8 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
   #if defined(HAVE_VASPRINTF)
 	vasprintf(&buf, fmt, args);
   #else
-  va_list ac;
-  va_copy(ac, args);
-  int ret = vsnprintf(NULL, 0, fmt, ac);
-  buf = (char *)malloc(ret+1);
-  va_copy(ac, args);
-  vsnprintf(buf, ret+1, fmt, ac);
+  buf = (char *)malloc(STRINGSIZE);
+  vsnprintf(buf, STRINGSIZE, fmt, args);
   #endif
 	va_end(args);
 
