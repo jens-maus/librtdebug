@@ -1005,10 +1005,12 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 	if(m_pData->matchDebugSpec(c, m, file) == false)
 		return;
 	
+  // now we go and create the output string by using the dynamic 
+  // vasprintf() function
 	va_list args;
 	va_start(args, fmt);
-	char buf[1024];
-	vsnprintf(buf, 1024, fmt, args);
+	char *buf;
+	vasprintf(&buf, fmt, args);
 	va_end(args);
 
 	// lock the output stream
@@ -1046,6 +1048,9 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 
 	// unlock the output stream
 	UNLOCK_OUTPUTSTREAM;
+
+  // free the memory vasprintf() allocated for us
+  free(buf);
 }
 
 //  Class:       CRTDebug
@@ -1068,11 +1073,13 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
 	// check if we should really output something
 	if(m_pData->matchDebugSpec(c, m, NULL) == false)
 		return;
-	
+
+	// now we go and create the output string by using the dynamic 
+  // vasprintf() function
 	va_list args;
 	va_start(args, fmt);
-	char buf[1024];
-	vsnprintf(buf, 1024, fmt, args);
+	char *buf;
+	vasprintf(&buf, fmt, args);
 	va_end(args);
 
 	// lock the output stream
@@ -1120,6 +1127,9 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
 
 	// unlock the output stream
 	UNLOCK_OUTPUTSTREAM;
+
+  // free the memory vasprintf() allocated for us
+  free(buf);
 }
 
 unsigned int CRTDebug::debugClasses() const
