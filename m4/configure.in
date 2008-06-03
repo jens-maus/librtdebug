@@ -60,7 +60,7 @@ AC_PROG_GCC_VERSION
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([gettimeofday])
+AC_CHECK_FUNCS([gettimeofday vasprintf])
 AC_CHECK_GETTICKCOUNT
 
 # Checks for some tools which we need

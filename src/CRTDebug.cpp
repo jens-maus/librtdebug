@@ -1010,7 +1010,13 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 	va_list args;
 	va_start(args, fmt);
 	char *buf;
+  #if defined(HAVE_VASPRINTF)
 	vasprintf(&buf, fmt, args);
+  #else
+  int ret = vsnprintf(NULL, 0, fmt, args);
+  buf = (char *)malloc(ret+1);
+  vsnprintf(buf, ret+1, fmt, args);
+  #endif
 	va_end(args);
 
 	// lock the output stream
@@ -1079,7 +1085,13 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	char *buf;
+  #if defined(HAVE_VASPRINTF)
 	vasprintf(&buf, fmt, args);
+  #else
+  int ret = vsnprintf(NULL, 0, fmt, args);
+  buf = (char *)malloc(ret+1);
+  vsnprintf(buf, ret+1, fmt, args);
+  #endif
 	va_end(args);
 
 	// lock the output stream
