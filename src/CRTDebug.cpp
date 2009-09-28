@@ -27,11 +27,13 @@
 #include <string>
 #include <map>
 #include <iostream>
+#include <algorithm>
 #include <iomanip>
-#include <sys/time.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <cctype>
+
+#include <string.h>
+#include <stdlib.h>
+#include <sys/time.h>
 
 #include "config.h"
 
@@ -157,8 +159,8 @@ class NameCompare
 			// well, believe it or not, but this is how you have
 			// to convert a std::string to lowercase... :(
 			std::transform(m_sSearchPattern.begin(), 
-										 m_sSearchPattern.end(), 
-										 m_sSearchPattern.begin(), tolower);
+					           m_sSearchPattern.end(), 
+								     m_sSearchPattern.begin(), tolower);
 		}
 
 		bool operator()(std::pair<std::string, bool> cur);
@@ -1013,10 +1015,10 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 	va_start(args, fmt);
 	char *buf;
   #if defined(HAVE_VASPRINTF)
-	vasprintf(&buf, fmt, args);
+	int ret = vasprintf(&buf, fmt, args);
   #else
   buf = (char *)malloc(STRINGSIZE);
-  vsnprintf(buf, STRINGSIZE, fmt, args);
+  int ret = vsnprintf(buf, STRINGSIZE, fmt, args);
   #endif
 	va_end(args);
 
@@ -1087,10 +1089,10 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
 	va_start(args, fmt);
 	char *buf;
   #if defined(HAVE_VASPRINTF)
-	vasprintf(&buf, fmt, args);
+	int ret = vasprintf(&buf, fmt, args);
   #else
   buf = (char *)malloc(STRINGSIZE);
-  vsnprintf(buf, STRINGSIZE, fmt, args);
+  int ret = vsnprintf(buf, STRINGSIZE, fmt, args);
   #endif
 	va_end(args);
 
