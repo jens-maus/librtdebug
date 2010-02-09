@@ -30,9 +30,16 @@ VERSION   = @PACKAGE_VERSION@
 DESTDIR   = ../lib/
 
 # directory specification
-OBJECTS_DIR = .obj
-MOC_DIR     = .moc
-UI_DIR      = .ui
+unix {
+  OBJECTS_DIR = .obj
+  MOC_DIR     = .moc
+  UI_DIR      = .ui
+}
+win32 {
+  OBJECTS_DIR = _obj
+  MOC_DIR     = _moc
+  UI_DIR      = _ui
+}
 
 # define headers and source files for compilation
 # PUB_HEADER: public headers going into /usr/local/include/rtdebug
@@ -48,6 +55,11 @@ SOURCES  = CRTDebug.cpp
 
 DEPENDPATH   = 
 INCLUDEPATH  = . includes
+
+# find out the system
+HOST_OS=@HOST_OS@
+HOST_CPU=@HOST_CPU@
+HOST_MACHINE=@HOST_MACHINE@
 
 # UNIX based target platforms installation defines
 unix {
@@ -83,67 +95,75 @@ mac {
   QMAKE_MAC_SDK=/Developer/SDKs/MacOSX10.4u.sdk
 }          
 
-# own QMAKE Flags definitions
-QMAKE_CXXFLAGS_RELEASE	= @CXXFLAGS@
-QMAKE_CXXFLAGS_DEBUG		= @CXXFLAGS@
+# set the config to either release or debug
+COMPILE_LEVEL = @COMPILE_LEVEL@
+contains(COMPILE_LEVEL, debug) {
+  CONFIG -= release
+  CONFIG *= debug
+  DEBUG = -DDEBUG
+}
+else {
+  CONFIG -= debug
+  CONFIG *= release
+  DEBUG =
+  QMAKE_LINK *= -s 
+}
+
+QMAKE_EXTRA_VARIABLES = DEBUG
+QMAKE_CXXFLAGS *= $(EXPORT_DEBUG)
+QMAKE_CFLAGS *= $(EXPORT_DEBUG)
 
 # the librtdebug library itself doesn't require Qt so we remove the QT
 # libs from our linker dependency
 QMAKE_LIBS_QT =
 QMAKE_LIBS_QT_THREAD =
 
-# find out the GCC version
-# and define some gcc v3+ options only.
-GCC_VERSION = @GCC_VERSION@
-contains(GCC_VERSION, 3) {
-	QMAKE_CXXFLAGS *= -fmessage-length=0
+# set the general compiler optimizations
+QMAKE_CFLAGS_RELEASE = -O3 -fomit-frame-pointer -funroll-loops
+QMAKE_CXXFLAGS_RELEASE = -O3 -fomit-frame-pointer -funroll-loops
+
+# set defines so that we can identify the processor type later on
+contains(HOST_MACHINE, x86_64) {      
+  DEFINES *= __X86_64__
+}
+contains(HOST_MACHINE, i[63]86) {
+  DEFINES *= __i386__
+}
+contains(HOST_MACHINE, sun4u) {
+  DEFINES *= __SPARC__
+}
+contains(HOST_MACHINE, Power.+) {
+  DEFINES *= __POWERPC__
 }
 
-# find out the system
-HOST_OS=@HOST_OS@
-HOST_CPU=@HOST_CPU@
-contains(HOST_CPU, sparc) {
-	QMAKE_CXXFLAGS *= -mcpu=v9 -mtune=ultrasparc3
-}
-else {
-	contains(HOST_CPU, [pP]ower[pP]c) {
-      QMAKE_CXXFLAGS *= -Acpu=powerpc -mcpu=G4
+!mac {
+  contains(HOST_MACHINE, x86_64) {      
+    QMAKE_CFLAGS_RELEASE *= -mtune=native
+    QMAKE_CXXFLAGS_RELEASE *= -mtune=native
   }
-  else {
-		contains(HOST_CPU, [oO]pteron.+) {			
-			QMAKE_CXXFLAGS *= -Acpu=amd64 -march=opteron
-		}
-	}
+  contains(HOST_MACHINE, i[63]86) {
+    QMAKE_CFLAGS_RELEASE *= -mtune=native
+    QMAKE_CXXFLAGS_RELEASE *= -mtune=native
+  }
+  contains(HOST_MACHINE, sun4u) {
+    QMAKE_CFLAGS_RELEASE *= -mcpu=ultrasparc3
+    QMAKE_CXXFLAGS_RELEASE *= -mcpu=ultrasparc3
+  }
+  contains(HOST_MACHINE, Power.+) {
+    QMAKE_CFLAGS_RELEASE *= -mcpu=powerpc
+    QMAKE_CXXFLAGS_RELEASE *= -mcpu=powerpc
+  }
 }
 
-# set the config to either release or debug
-COMPILE_LEVEL = @COMPILE_LEVEL@
-contains(COMPILE_LEVEL, debug) {
-	CONFIG -= release
-	CONFIG += debug
-	QMAKE_CXXFLAGS_DEBUG *= -g -O0
-	DEFINES *= DEBUG
-}
-else {
-	CONFIG -= debug
-	CONFIG += release
-	QMAKE_CXXFLAGS_RELEASE *= -O3 -funroll-loops
-	QMAKE_LINK *= -s 
-	DEFINES -= DEBUG
-}
+# override the compile output
+QMAKE_CXX  = @echo \'  CC   $<\'; $$QMAKE_CXX
+QMAKE_LINK = @echo \'  LD   $@\'; $$QMAKE_LINK
+QMAKE_MOC  = @echo \'  MOC  $@\'; $$QMAKE_MOC
 
 # use ANSI colors if it was specified on configure time
-!win32 {
-	ansi_color {
-		QMAKE_CXX = @printf \'\033[32mCompiling $<\033[0m\n\'; $$QMAKE_CXX
-		QMAKE_LINK = @printf \'\033[32mLinking \033[1m$@\033[0m\n\'; $$QMAKE_LINK
-		QMAKE_MOC = @printf \'\033[33mGenerating $@\033[0m\n\'; $$QMAKE_MOC	
-		DEFINES *= ANSI_COLOR
-	}
-	else {
-		QMAKE_CXX		= @echo \'Compiling $<\'; $$QMAKE_CXX
-		QMAKE_LINK	= @echo \'Linking $@\'; $$QMAKE_LINK
-		QMAKE_LINK  = @echo \'Generating $@\'; $$QMAKE_MOC
-		DEFINES -= ANSI_COLOR
-	}
+ansi_color {
+  DEFINES *= ANSI_COLOR
+}
+else {
+  DEFINES -= ANSI_COLOR
 }
