@@ -91,8 +91,7 @@ unix {
 # mac specific options to build universal
 # binaries 
 mac {      
-  CONFIG += x86 ppc
-  QMAKE_MAC_SDK=/Developer/SDKs/MacOSX10.4u.sdk
+  CONFIG += x86 ppc x86_64
 }          
 
 # set the config to either release or debug
@@ -123,17 +122,19 @@ QMAKE_CFLAGS_RELEASE = -O3 -fomit-frame-pointer -funroll-loops
 QMAKE_CXXFLAGS_RELEASE = -O3 -fomit-frame-pointer -funroll-loops
 
 # set defines so that we can identify the processor type later on
-contains(HOST_MACHINE, x86_64) {      
-  DEFINES *= __X86_64__
-}
-contains(HOST_MACHINE, i[63]86) {
-  DEFINES *= __i386__
-}
-contains(HOST_MACHINE, sun4u) {
-  DEFINES *= __SPARC__
-}
-contains(HOST_MACHINE, Power.+) {
-  DEFINES *= __POWERPC__
+!mac {
+  contains(HOST_MACHINE, x86_64) {      
+    DEFINES *= __X86_64__
+  }
+  contains(HOST_MACHINE, i[63]86) {
+    DEFINES *= __i386__
+  }
+  contains(HOST_MACHINE, sun4u) {
+    DEFINES *= __SPARC__
+  }
+  contains(HOST_MACHINE, Power.+) {
+    DEFINES *= __POWERPC__
+  }
 }
 
 !mac {
@@ -156,9 +157,11 @@ contains(HOST_MACHINE, Power.+) {
 }
 
 # override the compile output
-QMAKE_CXX  = @echo \'  CC   $<\'; $$QMAKE_CXX
-QMAKE_LINK = @echo \'  LD   $@\'; $$QMAKE_LINK
-QMAKE_MOC  = @echo \'  MOC  $@\'; $$QMAKE_MOC
+!win32 {
+  QMAKE_CXX  = @echo \'  CC   $<\'; $$QMAKE_CXX
+  QMAKE_LINK = @echo \'  LD   $@\'; $$QMAKE_LINK
+  QMAKE_MOC  = @echo \'  MOC  $@\'; $$QMAKE_MOC
+}
 
 # use ANSI colors if it was specified on configure time
 ansi_color {
