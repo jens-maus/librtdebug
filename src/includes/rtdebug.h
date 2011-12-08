@@ -107,6 +107,8 @@
 
 #if defined(DEBUG)
 
+#include <stdlib.h>
+
 #if !defined(DEBUG_MODULE)
 #define DEBUG_MODULE DBM_NONE
 #endif
