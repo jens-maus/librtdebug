@@ -88,12 +88,6 @@ unix {
   INSTALLS += target include documentation
 }
 
-# mac specific options to build universal
-# binaries 
-mac {      
-  CONFIG += x86 ppc x86_64
-}          
-
 # set the config to either release or debug
 COMPILE_LEVEL = @COMPILE_LEVEL@
 contains(COMPILE_LEVEL, debug) {
