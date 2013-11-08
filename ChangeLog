@@ -6,6 +6,10 @@ RTDebugLib - Runtime Debugging C++ Library
 $Id$
 $URL$
 
+2013-11-08  Thore Boeckelmann <tboeckel@gmx.de>
+
+   * configure: allow gcc versions like 4.6, too, instead of 4.6.x only.
+
 2009-07-28  Jens Langner <Jens.Langner@light-speed.de>
 
    * CRTDebug.c: fixed the broken build when building rtdebug with GCC 4.x.
