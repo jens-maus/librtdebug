@@ -85,6 +85,10 @@
 #define DBC_ERROR_COLOR			ANSI_ESC_FG_RED
 #define DBC_WARNING_COLOR		ANSI_ESC_FG_YELLOW
 
+#define PROCESS_ID				m_pData->m_PID
+#define PROCESS_WIDTH			5
+#define PROCESS_PREFIX			std::setw(PROCESS_WIDTH) << std::setfill(' ') << PROCESS_ID
+
 // some often used macros to output the thread number at the beginning of each
 // debug output so that we know from which thread this output came.
 #if defined(HAVE_LIBPTHREAD)
@@ -92,8 +96,8 @@
 #define THREAD_TYPE					pthread_self()
 #define THREAD_ID						m_pData->m_ThreadID[THREAD_TYPE]
 #define THREAD_WIDTH				2
-#define THREAD_PREFIX				std::setw(THREAD_WIDTH) << std::setfill('0') << THREAD_ID << ": "
-#define THREAD_PREFIX_COLOR	ANSI_ESC_BG << THREAD_ID%6 << "m" << std::setw(THREAD_WIDTH) \
+#define THREAD_PREFIX				PROCESS_PREFIX << "." << std::setw(THREAD_WIDTH) << std::setfill('0') << THREAD_ID << ": "
+#define THREAD_PREFIX_COLOR	ANSI_ESC_BG << THREAD_ID%6 << "m" << PROCESS_PREFIX << "." << std::setw(THREAD_WIDTH) \
 														<< std::setfill('0') << THREAD_ID << ":" << ANSI_ESC_CLR << " "
 #define THREAD_ID_CHECK			if(m_pData->m_ThreadID[THREAD_TYPE] == 0)\
 															m_pData->m_ThreadID[THREAD_TYPE] = ++(m_pData->m_iThreadCount)
@@ -104,8 +108,8 @@
 #else
 
 #define THREAD_TYPE					0
-#define THREAD_PREFIX				""
-#define THREAD_PREFIX_COLOR	""
+#define THREAD_PREFIX				PROCESS_PREFIX << ": "
+#define THREAD_PREFIX_COLOR	PROCESS_PREFIX << ": "
 #define THREAD_ID_CHECK			(void(0))
 #define INDENT_OUTPUT				std::string(m_pData->m_IdentLevel[THREAD_TYPE], ' ')
 #define LOCK_OUTPUTSTREAM		(void(0))
@@ -131,6 +135,7 @@ class CRTDebugPrivate
 
 	// data
 	public:
+		pid_t m_PID;															//!< process identification number
 		std::map<pthread_t, unsigned int>		m_ThreadID;						//!< thread identification number
 		std::map<pthread_t, unsigned int>		m_IdentLevel;					//!< different ident levels for different threads
 		std::map<pthread_t, struct timeval>	m_TimeMeasure;				//!< for measuring the time we need more structs
@@ -405,6 +410,7 @@ CRTDebug::CRTDebug(const int dbclasses, const int dbflags)
 	m_pData = new CRTDebugPrivate();
 
 	// set some default values
+	m_pData->m_PID = getpid();
 	m_pData->m_bHighlighting = true;
 	m_pData->m_iDebugClasses = dbclasses;
 	m_pData->m_iDebugFlags = dbflags;
