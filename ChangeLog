@@ -9,6 +9,8 @@ $URL$
 2013-11-08  Thore Boeckelmann <tboeckel@gmx.de>
 
    * configure: allow gcc versions like 4.6, too, instead of 4.6.x only.
+   * CRTDebug.cpp: correctly switch back to decimal output of numbers after
+     printing some hexdecimal numbers.
 
 2009-07-28  Jens Langner <Jens.Langner@light-speed.de>
 

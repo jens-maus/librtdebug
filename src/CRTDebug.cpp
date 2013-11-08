@@ -128,7 +128,7 @@ class CRTDebugPrivate
 	// methods
 	public:
 		bool matchDebugSpec(const int cl, const char* module, const char* file);
-	
+
 	// data
 	public:
 		std::map<pthread_t, unsigned int>		m_ThreadID;						//!< thread identification number
@@ -139,7 +139,7 @@ class CRTDebugPrivate
 		std::map<std::string, bool>					m_DebugModules;				//!< to map actual specified debug modules
 		std::map<std::string, bool>					m_DebugFiles;					//!< to map actual specified source file names*/
 		unsigned int												m_iDebugFlags;				//!< the currently active debug flags
-		unsigned int												m_iThreadCount;				//!< counter of total number of threads processing		
+		unsigned int												m_iThreadCount;				//!< counter of total number of threads processing
 
 		#if defined(HAVE_LIBPTHREAD)
 		pthread_mutex_t											m_pCoutMutex;					//!< a mutex to sync cout output
@@ -157,11 +157,11 @@ class NameCompare
 	public:
 		NameCompare(std::string searchPattern)
 			: m_sSearchPattern(searchPattern)
-		{ 
+		{
 			// well, believe it or not, but this is how you have
 			// to convert a std::string to lowercase... :(
-			std::transform(m_sSearchPattern.begin(), 
-					           m_sSearchPattern.end(), 
+			std::transform(m_sSearchPattern.begin(),
+					           m_sSearchPattern.end(),
 								     m_sSearchPattern.begin(), tolower);
 		}
 
@@ -179,13 +179,13 @@ bool NameCompare::operator()(std::pair<std::string, bool> cur)
 
 //  Class:       CRTDebug
 //  Method:      instance
-//! 
-//! Return the current instance for the debug class. If no one exists 
+//!
+//! Return the current instance for the debug class. If no one exists
 //! creates one.
-//! 
+//!
 //! @return      pointer to current instance of CRTDebug
 ////////////////////////////////////////////////////////////////////////////////
-CRTDebug* CRTDebug::m_pSingletonInstance = 0; 
+CRTDebug* CRTDebug::m_pSingletonInstance = 0;
 CRTDebug* CRTDebug::instance()
 {
 	if(m_pSingletonInstance == 0)
@@ -196,11 +196,11 @@ CRTDebug* CRTDebug::instance()
 
 //  Class:       CRTDebug
 //  Method:      destroy
-//! 
+//!
 //! Destroys (free) the singleton object and set the singleton Instance
 //! variable to 0 so that the next call to instance() will create a new
 //! singleton object.
-//! 
+//!
 ////////////////////////////////////////////////////////////////////////////////
 void CRTDebug::destroy()
 {
@@ -213,10 +213,10 @@ void CRTDebug::destroy()
 
 //  Class:       CRTDebug
 //  Method:      init
-//! 
+//!
 //! initializes the debugging framework by parsing a specified environment variable
 //! via getenv() so that only certain predefined debug messages will be output,
-//! 
+//!
 ////////////////////////////////////////////////////////////////////////////////
 void CRTDebug::init(const char* variable)
 {
@@ -229,7 +229,7 @@ void CRTDebug::init(const char* variable)
 		std::cout << "*** parsing ENV variable: '" << variable << "' for debug options." << std::endl
 		          << "*** for tokens: '@' class, '+' flags, '&' name, '%' module" << std::endl
 							<< "*** --------------------------------------------------------------------------" << std::endl;
-		
+
 		char* var = getenv(variable);
 		if(var != NULL)
 		{
@@ -262,7 +262,7 @@ void CRTDebug::init(const char* variable)
 						s++;
 					}
 				}
-				
+
 				switch(firstchar)
 				{
 					// class definition
@@ -333,9 +333,9 @@ void CRTDebug::init(const char* variable)
 
 						// convert the C-string to an STL std::string
 						std::string token = tk;
-						std::transform(token.begin(), 
-													 token.end(), 
-													 token.begin(), tolower);						
+						std::transform(token.begin(),
+													 token.end(),
+													 token.begin(), tolower);
 						free(tk);
 
 						// lets add the lowercase token to our sourcefilemap.
@@ -355,9 +355,9 @@ void CRTDebug::init(const char* variable)
 
 						// convert the C-string to an STL std::string
 						std::string token = tk;
-						std::transform(token.begin(), 
-													 token.end(), 
-													 token.begin(), tolower);						
+						std::transform(token.begin(),
+													 token.end(),
+													 token.begin(), tolower);
 						free(tk);
 
 						// lets add the lowercase token to our sourcefilemap.
@@ -387,17 +387,17 @@ void CRTDebug::init(const char* variable)
 			std::cout << "*** --------------------------------------------------------------------------" << std::endl;
 		}
 
-		std::cout << "*** active debug classes/flags: 0x" << std::setw(8) << std::setfill('0') << std::hex << rtdebug->debugClasses() 
-							<< "/0x" << std::setw(8) << std::setfill('0') << std::hex << rtdebug->debugFlags() << std::endl;
+		std::cout << "*** active debug classes/flags: 0x" << std::setw(8) << std::setfill('0') << std::hex << rtdebug->debugClasses()
+							<< "/0x" << std::setw(8) << std::setfill('0') << std::hex << rtdebug->debugFlags() << std::dec << std::endl;
 		std::cout << "*** Normal processing follows ************************************************" << std::endl;
 	}
 }
 
 //  Class:       CRTDebug
 //  Constructor: CRTDebug
-//! 
+//!
 //! Construct a CRTDebug object.
-//! 
+//!
 ////////////////////////////////////////////////////////////////////////////////
 CRTDebug::CRTDebug(const int dbclasses, const int dbflags)
 {
@@ -419,16 +419,16 @@ CRTDebug::CRTDebug(const int dbclasses, const int dbflags)
 		m_pData->m_iDebugClasses = DBC_ERROR | DBC_DEBUG | DBC_WARNING | DBC_ASSERT | DBC_REPORT | DBC_TIMEVAL;
 
 	if(m_pData->m_iDebugFlags == 0)
-		m_pData->m_iDebugFlags = DBF_ALWAYS | DBF_STARTUP; 
+		m_pData->m_iDebugFlags = DBF_ALWAYS | DBF_STARTUP;
 
 	std::cout << "*** rtdebug v" << PACKAGE_VERSION << " (" << __DATE__ << ") runtime debugging framework startup ***********" << std::endl;
 }
 
 //  Class:       CRTDebug
 //  Destructor:  CRTDebug
-//! 
+//!
 //! Destruct a CRTDebug object.
-//! 
+//!
 ////////////////////////////////////////////////////////////////////////////////
 CRTDebug::~CRTDebug()
 {
@@ -436,37 +436,37 @@ CRTDebug::~CRTDebug()
 	pthread_mutex_destroy(&(m_pData->m_pCoutMutex));
 	#endif
 
-	std::cout << "*** rtdebug framework shutdowned *********************************************" << std::endl;	
+	std::cout << "*** rtdebug framework shutdowned *********************************************" << std::endl;
 }
 
 //  Class:       CRTDebug
 //  Method:      Enter
-//! 
+//!
 //! This method will print out a short information string which should signal
 //! the developer that the program flow passed a new method/function entry.
 //!
 //! It will normally be used by the uppercase ENTER() macros in debug.h which
 //! should be placed at every method/function entry.
-//! 
+//!
 //! @param       c the debug class on which the output should be placed
 //! @param       file file name of the source code file
 //! @param       line the line number on which the ENTER() was placed
 //! @param       function name of the function in which the ENTER() was placed.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::Enter(const int c, const char* m, const char* file, long line, 
+void CRTDebug::Enter(const int c, const char* m, const char* file, long line,
 										 const char* function)
 {
 	// check if we should really output something
 	if(m_pData->matchDebugSpec(c, m, file) == false)
 		return;
-	
+
 	// lock the output stream
 	LOCK_OUTPUTSTREAM;
-	
+
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
 	THREAD_ID_CHECK;
-	
+
 	if(m_pData->m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR
@@ -498,7 +498,7 @@ void CRTDebug::Enter(const int c, const char* m, const char* file, long line,
 //!
 //! It will normally be used by the uppercase LEAVE() macros in debug.h which
 //! should be placed at every method/function entry.
-//! 
+//!
 //! @param       c the debug class on which the output should be placed
 //! @param       file file name of the source code file
 //! @param       line the line number on which the LEAVE() was placed
@@ -510,7 +510,7 @@ void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
 	// check if we should really output something
 	if(m_pData->matchDebugSpec(c, m, file) == false)
 		return;
-	
+
 	if(m_pData->m_IdentLevel[THREAD_TYPE] > 0)
 		m_pData->m_IdentLevel[THREAD_TYPE]--;
 
@@ -520,7 +520,7 @@ void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
 	THREAD_ID_CHECK;
-	
+
 	if(m_pData->m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR
@@ -549,7 +549,7 @@ void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
 //!
 //! It will normally be used by the uppercase RETURN() macros in debug.h which
 //! should be placed at every method/function entry.
-//! 
+//!
 //! @param       c the debug class on which the output should be placed
 //! @param       file file name of the source code file
 //! @param       line the line number on which the RETURN() was placed
@@ -562,7 +562,7 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 	// check if we should really output something
 	if(m_pData->matchDebugSpec(c, m, file) == false)
 		return;
-	
+
   if(m_pData->m_IdentLevel[THREAD_TYPE] > 0)
 		m_pData->m_IdentLevel[THREAD_TYPE]--;
 
@@ -572,7 +572,7 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
 	THREAD_ID_CHECK;
-	
+
 	if(m_pData->m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR
@@ -580,7 +580,7 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
 							<< std::dec << line << ":Leaving " << function << "() (result 0x"
 							<< std::hex << std::setw(8) << std::setfill('0') << result << ", "
-							<< std::dec << result << ")" << ANSI_ESC_CLR << std::endl;
+							<< std::dec << result << ")" << ANSI_ESC_CLR << std::dec << std::endl;
 	}
 	else
 	{
@@ -589,7 +589,7 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
 							<< std::dec << line << ":Leaving " << function << "() (result 0x"
 							<< std::hex << std::setw(8) << std::setfill('0') << result << ", "
-							<< std::dec << result << ")" << std::endl;
+							<< std::dec << result << ")" << std::dec << std::endl;
 	}
 
 	// unlock the output stream
@@ -598,14 +598,14 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 
 //  Class:       CRTDebug
 //  Method:      ShowValue
-//! 
+//!
 //! This method will output "show" a value on the terminal after formating
 //! the debugging string accordingly.
 //!
 //! It is normally executed by the SHOWVALUE() macro which should easily
 //! give a developer a way to output any variable to the terminal to check
 //! it's current value on runtime.
-//! 
+//!
 //! @param       c			the debug class on which this output should be placed
 //! @param       value	the variable on which we want to view the value
 //! @param       size		the size of the variable so that we can do some hex output
@@ -613,20 +613,20 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 //! @param       file		the file name of the source code where we placed SHOWVALUE()
 //! @param       line		the line number on which the SHOWVALUE() is.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::ShowValue(const int c, const char* m, long value, int size, 
+void CRTDebug::ShowValue(const int c, const char* m, long value, int size,
 												 const char *name, const char *file, long line)
 {
 	// check if we should really output something
 	if(m_pData->matchDebugSpec(c, m, file) == false)
 		return;
-	
+
 	// lock the output stream
 	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
 	THREAD_ID_CHECK;
-	
+
 	if(m_pData->m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR
@@ -645,7 +645,7 @@ void CRTDebug::ShowValue(const int c, const char* m, long value, int size,
 							<< ", 0x" << std::hex << std::setw(size*2) << std::setfill('0')
 							<< value;
 	}
-	
+
 	if(size == 1 && value < 256)
 	{
 		if(value < ' ' || (value >= 127 && value <= 160))
@@ -662,7 +662,7 @@ void CRTDebug::ShowValue(const int c, const char* m, long value, int size,
 	if(m_pData->m_bHighlighting)
 		std::cout << ANSI_ESC_CLR;
 
-	std::cout << std::endl;
+	std::cout << std::dec << std::endl;
 
 	// unlock the output stream
 	UNLOCK_OUTPUTSTREAM;
@@ -670,12 +670,12 @@ void CRTDebug::ShowValue(const int c, const char* m, long value, int size,
 
 //  Class:       CRTDebug
 //  Method:      ShowPointer
-//! 
+//!
 //! Method to give a developer the possibility to view a currently set
 //! pointer variable. It outputs the current address of that pointer.
 //!
 //! It is normally invoked by the SHOWPOINTER() macro.
-//! 
+//!
 //! @param       c				the debug class
 //! @param       pointer	the pointer variable which we want to output
 //! @param       name			the name of the variable
@@ -688,14 +688,14 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
 	// check if we should really output something
 	if(m_pData->matchDebugSpec(c, m, file) == false)
 		return;
-	
+
 	// lock the output stream
 	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
 	THREAD_ID_CHECK;
-	
+
 	if(m_pData->m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR
@@ -718,8 +718,8 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
 
 	if(m_pData->m_bHighlighting)
 		std::cout << ANSI_ESC_CLR;
-	
-	std::cout << std::endl;
+
+	std::cout << std::dec << std::endl;
 
 	// unlock the output stream
 	UNLOCK_OUTPUTSTREAM;
@@ -727,7 +727,7 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
 
 //  Class:       CRTDebug
 //  Method:      ShowString
-//! 
+//!
 //! Method to show the user a string on the terminal. This string will
 //! not be preparsed or altered in anyway, this is done by another method.
 //!
@@ -735,7 +735,7 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
 //! the possibility to output any string on runtime.
 //! In contrast to the ShowMsg() method, this method will output the name
 //! of the used string aswell as the address of it.
-//! 
+//!
 //! @param       c			the debug class
 //! @param       string the string to output
 //! @param       name		the variable name of the string
@@ -748,14 +748,14 @@ void CRTDebug::ShowString(const int c, const char* m, const char* string,
 	// check if we should really output something
 	if(m_pData->matchDebugSpec(c, m, file) == false)
 		return;
-	
+
 	// lock the output stream
 	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
 	THREAD_ID_CHECK;
-	
+
 	if(m_pData->m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR
@@ -763,7 +763,7 @@ void CRTDebug::ShowString(const int c, const char* m, const char* string,
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << name << " = 0x" << std::hex
 							<< std::setw(8) << std::setfill('0') << string << " \""
-							<< string << "\"" << ANSI_ESC_CLR << std::endl;
+							<< string << "\"" << ANSI_ESC_CLR << std::dec << std::endl;
 	}
 	else
 	{
@@ -772,7 +772,7 @@ void CRTDebug::ShowString(const int c, const char* m, const char* string,
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << name << " = 0x" << std::hex
 							<< std::setw(8) << std::setfill('0') << string << " \""
-							<< string << "\"" << std::endl;
+							<< string << "\"" << std::dec << std::endl;
 	}
 
 	// unlock the output stream
@@ -781,13 +781,13 @@ void CRTDebug::ShowString(const int c, const char* m, const char* string,
 
 //  Class:       CRTDebug
 //  Method:      ShowMessage
-//! 
+//!
 //! Method to just output a string. The string will not be preparsed or altered
 //! in any form.
 //!
 //! This method is invoked by the SHOWMSG() macro to give the developer the
 //! possibility to output any string within the debug environment.
-//! 
+//!
 //! @param       c			the debug class
 //! @param       string	the string to output
 //! @param       file		the filename of the source
@@ -799,14 +799,14 @@ void CRTDebug::ShowMessage(const int c, const char* m, const char* string,
 	// check if we should really output something
 	if(m_pData->matchDebugSpec(c, m, file) == false)
 		return;
-	
+
 	// lock the output stream
 	LOCK_OUTPUTSTREAM;
 
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
 	THREAD_ID_CHECK;
-	
+
 	if(m_pData->m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR
@@ -818,18 +818,18 @@ void CRTDebug::ShowMessage(const int c, const char* m, const char* string,
 	else
 	{
 		std::cout << THREAD_PREFIX
-							<< INDENT_OUTPUT 
+							<< INDENT_OUTPUT
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << std::endl;
 	}
-	
+
 	// unlock the output stream
 	UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
 //  Method:      StartClock
-//! 
+//!
 //! Method to output the current time in seconds.milliseconds since 1.1.1970
 //! and to automatically start a timer to measure the time between a StartClock()
 //! and a StopClock() call.
@@ -837,7 +837,7 @@ void CRTDebug::ShowMessage(const int c, const char* m, const char* string,
 //! This method is invoked by the STARTCLOCK() macro and should be followed
 //! by a later STOPCLOCK() call within the same thread, so that this debug
 //! class can output the measured time between those two calls.
-//! 
+//!
 //! @param       c			the debug class
 //! @param       string the additional string to identify the clock
 //! @param       file		the filename of the source code
@@ -849,7 +849,7 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 	// check if we should really output something
 	if(m_pData->matchDebugSpec(c, m, file) == false)
 		return;
-	
+
 	// lets get the current time of the day
 	#if defined(HAVE_GETTIMEOFDAY)
 	struct timeval* tp = &(m_pData->m_TimeMeasure[THREAD_TYPE]);
@@ -879,7 +879,7 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
 	THREAD_ID_CHECK;
-	
+
 	if(m_pData->m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR
@@ -891,26 +891,26 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 	else
 	{
 		std::cout << THREAD_PREFIX
-							<< INDENT_OUTPUT 
+							<< INDENT_OUTPUT
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << " started@"
 							<< formattedTime << std::endl;
 	}
-	
+
 	// unlock the output stream
 	UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
 //  Method:      StopClock
-//! 
+//!
 //! Method to output the current time in seconds.milliseconds since 1.1.1970
 //! and to calculate the passed time since the last StartClock() call.
 //!
 //! This method is invoked by the STOPCLOCK() macro and calculates the time
 //! since the last executation of STARTCLOCK(). It will then output the
 //! difference in seconds.milliseconds format.
-//! 
+//!
 //! @param       c			the debug class
 //! @param       string	the additional string to output
 //! @param       file		the filename of the source code file
@@ -922,7 +922,7 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	// check if we should really output something
 	if(m_pData->matchDebugSpec(c, m, file) == false)
 		return;
-	
+
 	// lets get the current time of the day
 	struct timeval newtp;
 	#if defined(HAVE_GETTIMEOFDAY)
@@ -963,7 +963,7 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
 	THREAD_ID_CHECK;
-	
+
 	if(m_pData->m_bHighlighting)
 	{
 		std::cout << THREAD_PREFIX_COLOR
@@ -976,27 +976,27 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	else
 	{
 		std::cout << THREAD_PREFIX
-							<< INDENT_OUTPUT 
+							<< INDENT_OUTPUT
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << " stopped@"
 							<< formattedTime << " = " << std::fixed << std::setprecision(3) << difftime << "s"
 							<< std::endl;
 	}
-	
+
 	// unlock the output stream
 	UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
 //  Method:      dprintf_header
-//! 
+//!
 //! Autoformatting debug message method which will format a provided formatstring
 //! in a printf()-like format and output the resulting string together with the
 //! default debugging header.
 //!
 //! This method is invoked by the D() E() and W() macros to output a simple string
 //! within a predefined debugging class and group.
-//! 
+//!
 //! @param       c		the debug class on which the output should be done.
 //! @param       g		the debug group in which this message belongs.
 //! @param       file	the filename of the source file.
@@ -1010,8 +1010,8 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 	// check if we should really output something
 	if(m_pData->matchDebugSpec(c, m, file) == false)
 		return;
-	
-  // now we go and create the output string by using the dynamic 
+
+  // now we go and create the output string by using the dynamic
   // vasprintf() function
 	va_list args;
 	va_start(args, fmt);
@@ -1030,7 +1030,7 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
 	THREAD_ID_CHECK;
-	
+
 	if(m_pData->m_bHighlighting)
 	{
 		const char *highlight;
@@ -1073,7 +1073,7 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 //! This method is invoked by the mixed-case macros to output user dependant
 //! information strings to the user. It will also take care of ANSI color
 //! highlighting if enabled.
-//! 
+//!
 //! @param       c	 the debug class on which the output should be done.
 //! @param       g   the debug group in which this message belongs.
 //! @param       fmt the format string
@@ -1085,7 +1085,7 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
 	if(m_pData->matchDebugSpec(c, m, NULL) == false)
 		return;
 
-	// now we go and create the output string by using the dynamic 
+	// now we go and create the output string by using the dynamic
   // vasprintf() function
 	va_list args;
 	va_start(args, fmt);
@@ -1104,7 +1104,7 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
 	// check if the call is issued from a new thread or if this is an already
 	// known one for which we have assigned an own ID
 	THREAD_ID_CHECK;
-	
+
 	#ifdef DEBUG
 	if(m_pData->m_bHighlighting)
 	{
@@ -1149,12 +1149,12 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
 }
 
 unsigned int CRTDebug::debugClasses() const
-{ 
+{
 	return m_pData->m_iDebugClasses;
 }
 
 unsigned int CRTDebug::debugFlags() const
-{ 
+{
 	return m_pData->m_iDebugFlags;
 }
 
@@ -1167,7 +1167,7 @@ const char* CRTDebug::debugFiles() const
 	{
 		if(it != m_pData->m_DebugFiles.begin())
 			result += " ";
-		
+
 		if((*it).second == true)
 			result += (*it).first;
 		else
@@ -1201,17 +1201,17 @@ const char* CRTDebug::debugModules() const
 }
 
 bool CRTDebug::highlighting() const
-{ 
+{
 	return m_pData->m_bHighlighting;
 }
 
 void CRTDebug::setDebugClass(unsigned int cl)
-{ 
+{
 	m_pData->m_iDebugClasses |= cl;
 }
 
 void CRTDebug::setDebugFlag(unsigned int fl)
-{ 
+{
 	m_pData->m_iDebugFlags |= fl;
 }
 
@@ -1219,10 +1219,10 @@ void CRTDebug::setDebugFile(const char* filename, bool show)
 {
 	// convert the C-string to an STL std::string
 	std::string token = filename;
-	std::transform(token.begin(), 
-								 token.end(), 
-								 token.begin(), tolower);						
-	
+	std::transform(token.begin(),
+								 token.end(),
+								 token.begin(), tolower);
+
 	m_pData->m_DebugFiles[token] = show;
 }
 
@@ -1230,20 +1230,20 @@ void CRTDebug::setDebugModule(const char* module, bool show)
 {
 	// convert the C-string to an STL std::string
 	std::string token = module;
-	std::transform(token.begin(), 
-								 token.end(), 
-								 token.begin(), tolower);						
-	
+	std::transform(token.begin(),
+								 token.end(),
+								 token.begin(), tolower);
+
 	m_pData->m_DebugModules[token] = show;
 }
 
 void CRTDebug::clearDebugClass(unsigned int cl)
-{ 
+{
 	m_pData->m_iDebugClasses &= ~cl;
 }
 
 void CRTDebug::clearDebugFlag(unsigned int fl)
-{ 
+{
 	m_pData->m_iDebugFlags &= ~fl;
 }
 
@@ -1258,9 +1258,9 @@ void CRTDebug::clearDebugModule(const char* module)
 }
 
 void CRTDebug::setHighlighting(bool on)
-{ 
+{
 	m_pData->m_bHighlighting = on;
-}	
+}
 
 bool CRTDebugPrivate::matchDebugSpec(const int cl, const char* module, const char* file)
 {
@@ -1294,7 +1294,7 @@ bool CRTDebugPrivate::matchDebugSpec(const int cl, const char* module, const cha
 			if((*it).second == true)
 				result = true;
 			else
-				result = false;			
+				result = false;
 		}
 	}
 
