@@ -875,9 +875,9 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 	struct tm brokentime;
 	localtime_r(&starttime, &brokentime);
 	char buf[10];
-	strftime(&buf[0], 10, "%T", &brokentime);
+	strftime(buf, sizeof(buf), "%T", &brokentime);
 	char formattedTime[40];
-	snprintf(&formattedTime[0], sizeof(formattedTime), "%s'%03ld", buf, (tp->tv_usec-((tp->tv_usec/MICROSEC)*MICROSEC))/MILLISEC);
+	snprintf(formattedTime, sizeof(formattedTime), "%s'%06ld", buf, tp->tv_usec);
 
 	// lock the output stream
 	LOCK_OUTPUTSTREAM;
@@ -943,25 +943,19 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	// now we calculate the timedifference
 	struct timeval* oldtp = &(m_pData->m_TimeMeasure[THREAD_TYPE]);
 	struct timeval	difftp;
-	difftp.tv_sec		= newtp.tv_sec - oldtp->tv_sec;
-	difftp.tv_usec	= newtp.tv_usec - oldtp->tv_usec;
-	if(difftp.tv_usec < 0)
-	{
-		difftp.tv_sec--;
-		difftp.tv_usec += MICROSEC;
-  }
+	timersub(&newtp, oldtp, &difftp);
 
 	// convert the actual and diff time in a human readable format
 	time_t stoptime = newtp.tv_sec + (newtp.tv_usec/MICROSEC);
 	float difftime = (float)difftp.tv_sec + ((float)difftp.tv_usec/(float)MICROSEC);
 
-	// now we convert that starttime to something human readable
+	// now we convert that stoptime to something human readable
 	struct tm brokentime;
 	localtime_r(&stoptime, &brokentime);
 	char buf[10];
-	strftime(&buf[0], 10, "%T", &brokentime);
+	strftime(buf, sizeof(buf), "%T", &brokentime);
 	char formattedTime[40];
-	snprintf(&formattedTime[0], sizeof(formattedTime), "%s'%03ld", buf, (newtp.tv_usec-((newtp.tv_usec/MICROSEC)*MICROSEC))/MILLISEC);
+	snprintf(formattedTime, sizeof(formattedTime), "%s'%06ld", buf, newtp.tv_usec);
 
 	// lock the output stream
 	LOCK_OUTPUTSTREAM;
@@ -976,7 +970,7 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 							<< INDENT_OUTPUT << DBC_TIMEVAL_COLOR
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << " stopped@"
-							<< formattedTime << " = " << std::fixed << std::setprecision(3) << difftime << "s"
+							<< formattedTime << " = " << std::fixed << std::setprecision(6) << difftime << "s"
 							<< ANSI_ESC_CLR << std::endl;
 	}
 	else
@@ -985,7 +979,7 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 							<< INDENT_OUTPUT
 							<< (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
 							<< ":" << std::dec << line << ":" << string << " stopped@"
-							<< formattedTime << " = " << std::fixed << std::setprecision(3) << difftime << "s"
+							<< formattedTime << " = " << std::fixed << std::setprecision(6) << difftime << "s"
 							<< std::endl;
 	}
 
