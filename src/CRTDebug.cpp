@@ -24,17 +24,15 @@
 #include "CRTDebug.h"
 
 #include <cstdarg>
-#include <string>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <map>
 #include <iostream>
 #include <algorithm>
 #include <iomanip>
 #include <cctype>
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <stdio.h>
 #include <sys/time.h>
 
 #include "config.h"
@@ -619,7 +617,7 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 //! @param       file		the file name of the source code where we placed SHOWVALUE()
 //! @param       line		the line number on which the SHOWVALUE() is.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::ShowValue(const int c, const char* m, long value, int size,
+void CRTDebug::ShowValue(const int c, const char* m, long long value, int size,
 												 const char *name, const char *file, long line)
 {
 	// check if we should really output something
@@ -1011,17 +1009,19 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 	if(m_pData->matchDebugSpec(c, m, file) == false)
 		return;
 
-  // now we go and create the output string by using the dynamic
-  // vasprintf() function
+	// now we go and create the output string by using the dynamic
+	// vasprintf() function
 	va_list args;
 	va_start(args, fmt);
 	char *buf;
-  #if defined(HAVE_VASPRINTF)
-	int ret = vasprintf(&buf, fmt, args);
-  #else
-  buf = (char *)malloc(STRINGSIZE);
-  int ret = vsnprintf(buf, STRINGSIZE, fmt, args);
-  #endif
+	#if defined(HAVE_VASPRINTF)
+	if(vasprintf(&buf, fmt, args) == -1)
+		return;
+	#else
+	if((buf = (char *)malloc(STRINGSIZE)) == NULL)
+		return;
+	vsnprintf(buf, STRINGSIZE, fmt, args);
+	#endif
 	va_end(args);
 
 	// lock the output stream
@@ -1060,8 +1060,8 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 	// unlock the output stream
 	UNLOCK_OUTPUTSTREAM;
 
-  // free the memory vasprintf() allocated for us
-  free(buf);
+	// free the memory vasprintf() allocated for us
+	free(buf);
 }
 
 //  Class:       CRTDebug
@@ -1086,16 +1086,18 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
 		return;
 
 	// now we go and create the output string by using the dynamic
-  // vasprintf() function
+	// vasprintf() function
 	va_list args;
 	va_start(args, fmt);
 	char *buf;
-  #if defined(HAVE_VASPRINTF)
-	int ret = vasprintf(&buf, fmt, args);
-  #else
-  buf = (char *)malloc(STRINGSIZE);
-  int ret = vsnprintf(buf, STRINGSIZE, fmt, args);
-  #endif
+	#if defined(HAVE_VASPRINTF)
+	if(vasprintf(&buf, fmt, args) == -1)
+		return;
+	#else
+	if((buf = (char *)malloc(STRINGSIZE)) == NULL)
+		return;
+	vsnprintf(buf, STRINGSIZE, fmt, args);
+	#endif
 	va_end(args);
 
 	// lock the output stream
@@ -1144,8 +1146,8 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
 	// unlock the output stream
 	UNLOCK_OUTPUTSTREAM;
 
-  // free the memory vasprintf() allocated for us
-  free(buf);
+	// free the memory vasprintf() allocated for us
+	free(buf);
 }
 
 unsigned int CRTDebug::debugClasses() const

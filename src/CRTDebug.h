@@ -48,8 +48,8 @@ class CRTDebugPrivate;
 
 //  Classname:   CRTDebug
 //! @brief debugging purpose class
-//! @ingroup debug 
-//! 
+//! @ingroup debug
+//!
 //! This class manages the whole debugging system of an application. It will
 //! print out specified debugging information depending on the currently set
 //! debugging level.
@@ -95,7 +95,7 @@ class CRTDebug
 		void Enter(const int c, const char* m, const char* file, long line, const char* function);
 		void Leave(const int c, const char* m, const char* file, int line, const char* function);
 		void Return(const int c, const char* m, const char* file, int line, const char* function, long result);
-		void ShowValue(const int c, const char* m, long value, int size, const char* name, const char* file, long line);
+		void ShowValue(const int c, const char* m, long long value, int size, const char* name, const char* file, long line);
 		void ShowPointer(const int c, const char* m, void* pointer, const char* name, const char* file, long line);
 		void ShowString(const int c, const char* m, const char* string, const char* name, const char* file, long line);
 		void ShowMessage(const int c, const char* m, const char* string, const char* file, long line);
@@ -123,7 +123,7 @@ class CRTDebug
 		// methods to control additional options
 		bool highlighting() const;
 		void setHighlighting(bool on);
-		
+
 	protected:
 		CRTDebug(const int dbclasses=0, const int dbflags=0);
 		~CRTDebug();

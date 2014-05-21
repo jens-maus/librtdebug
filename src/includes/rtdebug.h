@@ -117,7 +117,7 @@
 #define ENTER()					CRTDebug::instance()->Enter(DBC_CTRACE, DEBUG_MODULE, __FILE__, __LINE__, __FUNCTION__)
 #define LEAVE()					CRTDebug::instance()->Leave(DBC_CTRACE, DEBUG_MODULE, __FILE__, __LINE__, __FUNCTION__)
 #define RETURN(r)				CRTDebug::instance()->Return(DBC_CTRACE, DEBUG_MODULE, __FILE__, __LINE__, __FUNCTION__, (long)r)
-#define SHOWVALUE(v)		CRTDebug::instance()->ShowValue(DBC_REPORT, DEBUG_MODULE, (long)v, sizeof(v), #v, __FILE__, __LINE__)
+#define SHOWVALUE(v)		CRTDebug::instance()->ShowValue(DBC_REPORT, DEBUG_MODULE, (long long)v, sizeof(v), #v, __FILE__, __LINE__)
 #define SHOWPOINTER(p)	CRTDebug::instance()->ShowPointer(DBC_REPORT, DEBUG_MODULE, p, #p, __FILE__, __LINE__)
 #define SHOWSTRING(s)		CRTDebug::instance()->ShowString(DBC_REPORT, DEBUG_MODULE, s, #s, __FILE__, __LINE__)
 #define SHOWMSG(m)			CRTDebug::instance()->ShowMessage(DBC_REPORT, DEBUG_MODULE, m, __FILE__, __LINE__)

@@ -6,6 +6,11 @@ RTDebugLib - Runtime Debugging C++ Library
 $Id$
 $URL$
 
+2014-05-21  Thore Boeckelmann <tboeckel@gmx.de>
+
+   * CRTDebug.cpp: changed the type of the value parameter from to "long" to
+     "long long" to allow output of 64bit variables with the SHOWVALUE() macro.
+
 2013-11-08  Thore Boeckelmann <tboeckel@gmx.de>
 
    * configure: allow gcc versions like 4.6, too, instead of 4.6.x only.
