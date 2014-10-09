@@ -33,6 +33,7 @@
 #include <iomanip>
 #include <cctype>
 
+#include <unistd.h>
 #include <sys/time.h>
 
 #include "config.h"
