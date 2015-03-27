@@ -1,7 +1,7 @@
 #/* vim:set ts=2 nowrap: ****************************************************
 #
 # librtdebug - A C++ based thread-safe Runtime Debugging Library
-# Copyright (C) 2003-2005 by Jens Langner <Jens.Langner@light-speed.de>
+# Copyright (C) 2003-2015 Jens Maus <mail@jens-maus.de>
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -20,37 +20,20 @@
 # $Id$
 #
 #***************************************************************************/
-@SET_MAKE@
 
-top_builddir = ..
+#ifndef CONFIG_H
+#define CONFIG_H
 
-ACLOCAL		= aclocal
-AUTOCONF	= autoconf
-AUTOHEADER= autoheader
-RM				= @RM_PATH@ -f
-RMDIR			= $(RM) -r
-COPY			= @CP_PATH@ -af 
-CHMOD			= @CHMOD_PATH@
+// An anonymous namespace restricts these variables to the scope of the
+// compilation unit.
+namespace {
+  const char* PROJECT_LONGNAME = "@PROJECT_LONGNAME@";
+  const char* PROJECT_VERSION = "@PROJECT_VERSION@";
+}
 
-all:  $(top_builddir)/configure
+#cmakedefine HAVE_GETTIMEOFDAY
+#cmakedefine HAVE_GETTICKCOUNT
+#cmakedefine HAVE_LIBPTHREAD
+#cmakedefine HAVE_VASPRINTF
 
-# Check on makefile.in in current dir
-Makefile:  Makefile.in  $(top_builddir)/config.status
-	cd $(top_builddir) && ./config.status
-
-$(top_builddir)/configure:  configure.in aclocal.m4
-	(cd $(top_builddir) && $(AUTOHEADER) m4/configure.in)
-	$(AUTOCONF) configure.in > $(top_builddir)/configure
-	$(CHMOD) u+x $(top_builddir)/configure
-
-aclocal.m4: acinclude.m4
-	$(ACLOCAL)
-
-install:
-
-clean:
-	$(RM) configure config.status config.log
-
-distclean: clean
-	$(RM) Makefile
-	$(RMDIR) autom4te.cache
+#endif

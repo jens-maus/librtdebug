@@ -426,7 +426,7 @@ CRTDebug::CRTDebug(const int dbclasses, const int dbflags)
 	if(m_pData->m_iDebugFlags == 0)
 		m_pData->m_iDebugFlags = DBF_ALWAYS | DBF_STARTUP;
 
-	std::cout << "*** rtdebug v" << PACKAGE_VERSION << " (" << __DATE__ << ") runtime debugging framework startup ***********" << "\r\n";
+	std::cout << "*** rtdebug v" << PROJECT_VERSION << " (" << __DATE__ << ") runtime debugging framework startup ***********" << "\r\n";
 }
 
 //  Class:       CRTDebug
