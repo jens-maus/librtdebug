@@ -6,6 +6,11 @@ RTDebugLib - Runtime Debugging C++ Library
 $Id$
 $URL$
 
+2015-04-16  Jens Maus <mail@jens-maus.de>
+
+   * misc: switch build environment from qmake to cmake and implemented mxe-based
+     cross compiling support for win32.
+
 2014-05-21  Thore Boeckelmann <tboeckel@gmx.de>
 
    * CRTDebug.cpp: changed the type of the value parameter from to "long" to

@@ -32,12 +32,6 @@ if (NOT CMAKE_BUILD_TYPE)
       FORCE)
 endif()
 
-# Install to "dist" directory in Windows for testing and as a staging directory
-# for the installer.
-if (WIN32 AND NOT CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX dist CACHE STRING "Install path prefix.")
-endif()
-
 # define the project and the version number
 project(librtdebug)
 set(PROJECT_LONGNAME "librtdebug")
@@ -46,19 +40,40 @@ set(PROJECT_VERSION_MINOR 0)
 set(PROJECT_VERSION_PATCH 6)
 set(PROJECT_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
 
+# change output directory to top-level 'bin' dir.
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 # Global CMake options
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+# set the cmake modules path
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+
+# In case we are cross compiling we have to setup
+# everything for different search paths
+if(CMAKE_CROSS_COMPILING)
+  set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
+  set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
+  set(PETLIB_PATH "/usr/local/petlib/${CROSS_OS}")
+else()
+  set(PETLIB_PATH "/usr/local/petlib")
+endif()
+
 # if /usr/local/petlib is found use that one for install and search prefix
-if(EXISTS "/usr/local/petlib/")
-  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/usr/local/petlib")
+if(EXISTS ${PETLIB_PATH})
+  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${PETLIB_PATH})
   if(CMAKE_INSTALL_PREFIX STREQUAL "/usr/local")
-    set(CMAKE_INSTALL_PREFIX "/usr/local/petlib")
+    set(CMAKE_INSTALL_PREFIX ${PETLIB_PATH})
   endif()
 endif()
 
+# Configure third party packages
+find_package(Threads REQUIRED)
+
 # Set some better optimization options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mtune=generic -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mtune=generic -std=c++11 -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE, "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fomit-frame-pointer")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO, "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3 -g -fomit-frame-pointer")
 set(CMAKE_CXX_FLAGS_DEBUG, "${CMAKE_CXX_FLAGS_RELEASE} -O0")

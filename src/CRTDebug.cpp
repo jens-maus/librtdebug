@@ -23,6 +23,8 @@
 
 #include "CRTDebug.h"
 
+#define _GNU_SOURCE
+
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -872,7 +874,11 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 
 	// now we convert that starttime to something human readable
 	struct tm brokentime;
+  #if defined(HAVE_LOCALTIME_R)
 	localtime_r(&starttime, &brokentime);
+  #else
+  localtime_s(&brokentime, &starttime);
+  #endif
 	char buf[10];
 	strftime(buf, sizeof(buf), "%T", &brokentime);
 	char formattedTime[40];
@@ -942,7 +948,14 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	// now we calculate the timedifference
 	struct timeval* oldtp = &(m_pData->m_TimeMeasure[THREAD_TYPE]);
 	struct timeval	difftp;
+  #if defined(HAVE_TIMERSUB)
 	timersub(&newtp, oldtp, &difftp);
+  #else
+  int microseconds = (newtp.tv_sec - oldtp->tv_sec) * MICROSEC + ((int)newtp.tv_usec - (int)oldtp->tv_usec);
+  int milliseconds = microseconds/1000;
+  difftp.tv_sec = microseconds/MICROSEC;
+  difftp.tv_usec = microseconds%MICROSEC;
+  #endif
 
 	// convert the actual and diff time in a human readable format
 	time_t stoptime = newtp.tv_sec + (newtp.tv_usec/MICROSEC);
@@ -950,7 +963,11 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 
 	// now we convert that stoptime to something human readable
 	struct tm brokentime;
+  #if defined(HAVE_LOCALTIME_R)
 	localtime_r(&stoptime, &brokentime);
+  #else
+  localtime_s(&brokentime, &stoptime);
+  #endif
 	char buf[10];
 	strftime(buf, sizeof(buf), "%T", &brokentime);
 	char formattedTime[40];

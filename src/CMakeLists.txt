@@ -26,10 +26,13 @@ include(CheckFunctionExists)
 check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
 check_function_exists(GetTickCount HAVE_GETTICKCOUNT)
 check_function_exists(vasprintf HAVE_VASPRINTF)
+check_function_exists(localtime_r HAVE_LOCALTIME_R)
+check_function_exists(timersub HAVE_TIMERSUB)
 
-# check for certain functions to exist
-include(CheckLibraryExists)
-check_library_exists(pthread pthread_mutex_init "" HAVE_LIBPTHREAD)
+# check if pthread library was found
+if(CMAKE_USE_PTHREADS_INIT)
+  set(HAVE_LIBPTHREAD 1)
+endif()
 
 # configure files where variables should be replaced.
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in
@@ -45,26 +48,26 @@ file(GLOB_RECURSE CODE_FILES *.cpp)
 
 # specify that we are creating a shared and static library at the
 # same time
-add_library(${CMAKE_PROJECT_NAME}.a  STATIC ${CODE_FILES})
-add_library(${CMAKE_PROJECT_NAME}.so SHARED ${CODE_FILES})
-set_target_properties(${CMAKE_PROJECT_NAME}.a PROPERTIES OUTPUT_NAME rtdebug 
-                                                         VERSION ${PROJECT_VERSION} 
-                                                         SOVERSION ${PROJECT_VERSION_MAJOR})
-set_target_properties(${CMAKE_PROJECT_NAME}.so PROPERTIES OUTPUT_NAME rtdebug
-                                                          VERSION ${PROJECT_VERSION} 
-                                                          SOVERSION ${PROJECT_VERSION_MAJOR})
+add_library(${CMAKE_PROJECT_NAME}-static STATIC ${CODE_FILES})
+add_library(${CMAKE_PROJECT_NAME}-shared SHARED ${CODE_FILES})
+set_target_properties(${CMAKE_PROJECT_NAME}-static PROPERTIES OUTPUT_NAME rtdebug 
+                                                              VERSION ${PROJECT_VERSION} 
+                                                              SOVERSION ${PROJECT_VERSION_MAJOR})
+set_target_properties(${CMAKE_PROJECT_NAME}-shared PROPERTIES OUTPUT_NAME rtdebug
+                                                              VERSION ${PROJECT_VERSION} 
+                                                              SOVERSION ${PROJECT_VERSION_MAJOR})
 
 # define link libraries dependencies
-#target_link_libraries(${CMAKE_PROJECT_NAME}.a Qt5::Core)
-#target_link_libraries(${CMAKE_PROJECT_NAME}.so Qt5::Core)
+target_link_libraries(${CMAKE_PROJECT_NAME}-static ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${CMAKE_PROJECT_NAME}-shared ${CMAKE_THREAD_LIBS_INIT})
 
 # definition of install targets
-install(TARGETS ${CMAKE_PROJECT_NAME}.a
+install(TARGETS ${CMAKE_PROJECT_NAME}-static
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         COMPONENT library
 )
-install(TARGETS ${CMAKE_PROJECT_NAME}.so
+install(TARGETS ${CMAKE_PROJECT_NAME}-shared
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         COMPONENT library
