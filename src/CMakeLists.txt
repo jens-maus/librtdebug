@@ -27,7 +27,6 @@ check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
 check_function_exists(GetTickCount HAVE_GETTICKCOUNT)
 check_function_exists(vasprintf HAVE_VASPRINTF)
 check_function_exists(localtime_r HAVE_LOCALTIME_R)
-check_function_exists(timersub HAVE_TIMERSUB)
 
 # check if pthread library was found
 if(CMAKE_USE_PTHREADS_INIT)

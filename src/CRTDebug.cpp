@@ -23,7 +23,9 @@
 
 #include "CRTDebug.h"
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <cstdarg>
 #include <cstdio>
@@ -948,13 +950,16 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	// now we calculate the timedifference
 	struct timeval* oldtp = &(m_pData->m_TimeMeasure[THREAD_TYPE]);
 	struct timeval	difftp;
-  #if defined(HAVE_TIMERSUB)
+  #if defined(timersub)
 	timersub(&newtp, oldtp, &difftp);
   #else
-  int microseconds = (newtp.tv_sec - oldtp->tv_sec) * MICROSEC + ((int)newtp.tv_usec - (int)oldtp->tv_usec);
-  int milliseconds = microseconds/1000;
-  difftp.tv_sec = microseconds/MICROSEC;
-  difftp.tv_usec = microseconds%MICROSEC;
+  difftp.tv_sec = newtp.tv_sec - oldtp->tv_sec;
+  difftp.tv_usec = newtp.tv_usec - oldtp->tv_usec;
+  if(difftp.tv_usec < 0)
+  {
+    --difftp.tv_sec;
+    difftp.tv_usec += MICROSEC;
+  }
   #endif
 
 	// convert the actual and diff time in a human readable format
