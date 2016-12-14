@@ -137,6 +137,12 @@ ifeq ($(OS), w32s)
   endif
 endif
 
+ifeq ($(OS), Windows_NT)
+  ##############################
+  # native MinGW build?
+  CMAKE_OPTIONS := -G"MSYS Makefiles"
+endif
+
 # depending on TARGET_PATH we enable cross compiling 
 # for cmake or not
 ifneq ($(TARGET_PATH),)
