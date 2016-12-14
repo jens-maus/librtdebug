@@ -58,15 +58,19 @@ if(CMAKE_CROSS_COMPILING)
   set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
   set(PETLIB_PATH "/usr/local/petlib/${CROSS_OS}")
 else()
-  set(PETLIB_PATH "/usr/local/petlib")
+  if(MSYS)
+    set(PETLIB_PATH "C:/MinGW/msys/1.0/local/petlib")
+  else()
+    set(PETLIB_PATH "/usr/local/petlib")
+  endif()
 endif()
 
 # if /usr/local/petlib is found use that one for install and search prefix
 if(EXISTS ${PETLIB_PATH})
   set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${PETLIB_PATH})
-  if(CMAKE_INSTALL_PREFIX STREQUAL "/usr/local")
+  #if(NOT DEFINED CMAKE_INSTALL_PREFIX)
     set(CMAKE_INSTALL_PREFIX ${PETLIB_PATH})
-  endif()
+  #endif()
 endif()
 
 # Configure third party packages
