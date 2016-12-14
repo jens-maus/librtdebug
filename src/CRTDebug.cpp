@@ -880,7 +880,7 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 	localtime_r(&starttime, &brokentime);
   #else
   #if defined(_WIN32)
-  memcpy(&brokentime, localtime(&starttime));
+  memcpy(&brokentime, localtime(&starttime), sizeof(brokentime));
   #else
   localtime_s(&brokentime, &starttime);
   #endif
@@ -976,7 +976,7 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 	localtime_r(&stoptime, &brokentime);
   #else
   #if defined(_WIN32)
-  memcpy(&brokentime, localtime(&stoptime));
+  memcpy(&brokentime, localtime(&stoptime), sizeof(brokentime));
   #else
   localtime_s(&brokentime, &stoptime);
   #endif
