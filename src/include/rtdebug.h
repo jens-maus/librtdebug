@@ -39,6 +39,10 @@
 #undef qWarning
 #define qWarning W
 #endif
+#ifdef qCritical
+#undef qCritical
+#define qCritical E
+#endif
 #ifdef qFatal
 #undef qFatal
 #define qFatal E

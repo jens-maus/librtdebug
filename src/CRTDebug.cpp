@@ -86,9 +86,53 @@
 #define DBC_ERROR_COLOR     ANSI_ESC_FG_RED
 #define DBC_WARNING_COLOR   ANSI_ESC_FG_YELLOW
 
-#define PROCESS_ID        m_pData->m_PID
-#define PROCESS_WIDTH     5
-#define PROCESS_PREFIX      std::setw(PROCESS_WIDTH) << std::setfill(' ') << PROCESS_ID
+#define PROCESS_ID          m_pData->m_PID
+#define PROCESS_WIDTH       5
+#define PROCESS_PREFIX      std::setw(PROCESS_WIDTH) << std::setfill(' ') << std::dec << PROCESS_ID
+
+#if defined(HAVE_GETTIMEOFDAY)
+#define GET_TIMEINFO(tp) \
+  if(gettimeofday((tp), NULL) != 0) \
+    return
+#elif defined(HAVE_GETTICKCOUNT)
+#define GET_TIMEINFO(tp) \
+  (tp)->tv_sec = GetTickCount() / MILLISEC; \
+  (tp)->tv_usec = 0
+#else
+  #error "no supported time measurement function found!"
+#endif
+
+#if defined(HAVE_LOCALTIME_R)
+  #define LOCALTIME(tm, tt) localtime_r((tt), (tm))
+#elif defined(HAVE_LOCALTIME_S)
+  #define LOCALTIME(tm, tt) localtime_s((tm), (tt))
+#else
+  #error "no matching localtime() function"
+#endif
+
+#if defined(HAVE_STRFTIME)
+#define GET_TIMESTR(tp) \
+  time_t tt_time = (tp)->tv_sec + ((tp)->tv_usec/MICROSEC); \
+  struct tm tm_time; \
+  LOCALTIME(&tm_time, &tt_time); \
+  char fmtTime[20]; \
+  { \
+    char fmtBuf[10]; \
+    strftime(fmtBuf, sizeof(fmtBuf), "%T", &tm_time); \
+    snprintf(fmtTime, sizeof(fmtTime), "%s'%06ld", fmtBuf, (tp)->tv_usec); \
+  }
+#define TIME_PREFIX       "[" << fmtTime << "]:"
+#define TIME_PREFIX_COLOR ANSI_ESC_FG_GREEN << TIME_PREFIX
+#else
+#define GET_TIMESTR(tp) (void(0))
+#define TIME_PREFIX
+#define TIME_PREFIX_COLOR
+#endif
+
+#define UPDATE_TIMEINFO \
+  struct timeval newtp; \
+  GET_TIMEINFO(&newtp); \
+  GET_TIMESTR(&newtp)
 
 // some often used macros to output the thread number at the beginning of each
 // debug output so that we know from which thread this output came.
@@ -97,9 +141,9 @@
 #define THREAD_TYPE         pthread_self()
 #define THREAD_ID           m_pData->m_ThreadID[THREAD_TYPE]
 #define THREAD_WIDTH        2
-#define THREAD_PREFIX       PROCESS_PREFIX << "." << std::setw(THREAD_WIDTH) << std::setfill('0') << THREAD_ID << ": "
-#define THREAD_PREFIX_COLOR ANSI_ESC_BG << THREAD_ID%6 << "m" << PROCESS_PREFIX << "." << std::setw(THREAD_WIDTH) \
-                            << std::setfill('0') << THREAD_ID << ":" << ANSI_ESC_CLR << " "
+#define THREAD_PREFIX       PROCESS_PREFIX << "." << std::setw(THREAD_WIDTH) << std::setfill('0') << std::dec << THREAD_ID << ": "
+#define THREAD_PREFIX_COLOR PROCESS_PREFIX << "." << ANSI_ESC_BG << std::dec << THREAD_ID%6 << "m" << \
+                            std::setw(THREAD_WIDTH) << std::setfill('0') << std::dec << THREAD_ID << ANSI_ESC_CLR << ": "
 #define THREAD_ID_CHECK     if(m_pData->m_ThreadID[THREAD_TYPE] == 0)\
                               m_pData->m_ThreadID[THREAD_TYPE] = ++(m_pData->m_iThreadCount)
 #define INDENT_OUTPUT       std::string(m_pData->m_IdentLevel[THREAD_TYPE], ' ')
@@ -110,7 +154,7 @@
 
 #define THREAD_TYPE         0
 #define THREAD_PREFIX       PROCESS_PREFIX << ": "
-#define THREAD_PREFIX_COLOR PROCESS_PREFIX << ": "
+#define THREAD_PREFIX_COLOR THREAD_PREFIX
 #define THREAD_ID_CHECK     (void(0))
 #define INDENT_OUTPUT       std::string(m_pData->m_IdentLevel[THREAD_TYPE], ' ')
 #define LOCK_OUTPUTSTREAM   (void(0))
@@ -470,13 +514,17 @@ void CRTDebug::Enter(const int c, const char* m, const char* file, long line,
   // lock the output stream
   LOCK_OUTPUTSTREAM;
 
+  // update time information
+  UPDATE_TIMEINFO;
+
   // check if the call is issued from a new thread or if this is an already
   // known one for which we have assigned an own ID
   THREAD_ID_CHECK;
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << THREAD_PREFIX_COLOR
+    std::cout << TIME_PREFIX_COLOR
+              << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_CTRACE_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
               << std::dec << line << ":Entering " << function << "()"
@@ -484,17 +532,18 @@ void CRTDebug::Enter(const int c, const char* m, const char* file, long line,
   }
   else
   {
-    std::cout << THREAD_PREFIX
+    std::cout << TIME_PREFIX
+              << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
               << std::dec << line << ":Entering " << function << "()" << "\r\n";
   }
 
-  // unlock the output stream
-  UNLOCK_OUTPUTSTREAM;
-
   // increase the indention level
   m_pData->m_IdentLevel[THREAD_TYPE] = m_pData->m_IdentLevel[THREAD_TYPE] + 1;
+
+  // unlock the output stream
+  UNLOCK_OUTPUTSTREAM;
 }
 
 //  Class:       CRTDebug
@@ -518,11 +567,14 @@ void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
   if(m_pData->matchDebugSpec(c, m, file) == false)
     return;
 
-  if(m_pData->m_IdentLevel[THREAD_TYPE] > 0)
-    m_pData->m_IdentLevel[THREAD_TYPE]--;
-
   // lock the output stream
   LOCK_OUTPUTSTREAM;
+
+  // update time information
+  UPDATE_TIMEINFO;
+
+  if(m_pData->m_IdentLevel[THREAD_TYPE] > 0)
+    m_pData->m_IdentLevel[THREAD_TYPE]--;
 
   // check if the call is issued from a new thread or if this is an already
   // known one for which we have assigned an own ID
@@ -530,7 +582,8 @@ void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << THREAD_PREFIX_COLOR
+    std::cout << TIME_PREFIX_COLOR
+              << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_CTRACE_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
               << std::dec << line << ":Leaving " << function << "()"
@@ -538,7 +591,8 @@ void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
   }
   else
   {
-    std::cout << THREAD_PREFIX
+    std::cout << TIME_PREFIX
+              << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
               << std::dec << line << ":Leaving " << function << "()" << "\r\n";
@@ -570,11 +624,14 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
   if(m_pData->matchDebugSpec(c, m, file) == false)
     return;
 
-  if(m_pData->m_IdentLevel[THREAD_TYPE] > 0)
-    m_pData->m_IdentLevel[THREAD_TYPE]--;
-
   // lock the output stream
   LOCK_OUTPUTSTREAM;
+
+  // update time information
+  UPDATE_TIMEINFO;
+
+  if(m_pData->m_IdentLevel[THREAD_TYPE] > 0)
+    m_pData->m_IdentLevel[THREAD_TYPE]--;
 
   // check if the call is issued from a new thread or if this is an already
   // known one for which we have assigned an own ID
@@ -582,7 +639,8 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << THREAD_PREFIX_COLOR
+    std::cout << TIME_PREFIX_COLOR
+              << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_CTRACE_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
               << std::dec << line << ":Leaving " << function << "() (result 0x"
@@ -591,7 +649,8 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
   }
   else
   {
-    std::cout << THREAD_PREFIX
+    std::cout << TIME_PREFIX
+              << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
               << std::dec << line << ":Leaving " << function << "() (result 0x"
@@ -630,13 +689,17 @@ void CRTDebug::ShowValue(const int c, const char* m, long long value, int size,
   // lock the output stream
   LOCK_OUTPUTSTREAM;
 
+  // update time information
+  UPDATE_TIMEINFO;
+
   // check if the call is issued from a new thread or if this is an already
   // known one for which we have assigned an own ID
   THREAD_ID_CHECK;
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << THREAD_PREFIX_COLOR
+    std::cout << TIME_PREFIX_COLOR
+              << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_REPORT_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << name << " = " << value
@@ -645,7 +708,8 @@ void CRTDebug::ShowValue(const int c, const char* m, long long value, int size,
   }
   else
   {
-    std::cout << THREAD_PREFIX
+    std::cout << TIME_PREFIX
+              << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << name << " = " << value
@@ -699,20 +763,25 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
   // lock the output stream
   LOCK_OUTPUTSTREAM;
 
+  // update time information
+  UPDATE_TIMEINFO;
+
   // check if the call is issued from a new thread or if this is an already
   // known one for which we have assigned an own ID
   THREAD_ID_CHECK;
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << THREAD_PREFIX_COLOR
+    std::cout << TIME_PREFIX_COLOR
+              << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_REPORT_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << name << " = ";
   }
   else
   {
-    std::cout << THREAD_PREFIX
+    std::cout << TIME_PREFIX
+              << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << name << " = ";
@@ -759,13 +828,17 @@ void CRTDebug::ShowString(const int c, const char* m, const char* string,
   // lock the output stream
   LOCK_OUTPUTSTREAM;
 
+  // update time information
+  UPDATE_TIMEINFO;
+
   // check if the call is issued from a new thread or if this is an already
   // known one for which we have assigned an own ID
   THREAD_ID_CHECK;
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << THREAD_PREFIX_COLOR
+    std::cout << TIME_PREFIX_COLOR
+              << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_REPORT_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << name << " = 0x" << std::hex
@@ -774,7 +847,8 @@ void CRTDebug::ShowString(const int c, const char* m, const char* string,
   }
   else
   {
-    std::cout << THREAD_PREFIX
+    std::cout << TIME_PREFIX
+              << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << name << " = 0x" << std::hex
@@ -810,13 +884,17 @@ void CRTDebug::ShowMessage(const int c, const char* m, const char* string,
   // lock the output stream
   LOCK_OUTPUTSTREAM;
 
+  // update time information
+  UPDATE_TIMEINFO;
+
   // check if the call is issued from a new thread or if this is an already
   // known one for which we have assigned an own ID
   THREAD_ID_CHECK;
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << THREAD_PREFIX_COLOR
+    std::cout << TIME_PREFIX_COLOR
+              << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_REPORT_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << string << ANSI_ESC_CLR
@@ -824,7 +902,8 @@ void CRTDebug::ShowMessage(const int c, const char* m, const char* string,
   }
   else
   {
-    std::cout << THREAD_PREFIX
+    std::cout << TIME_PREFIX
+              << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << string << "\r\n";
@@ -857,39 +936,29 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
   if(m_pData->matchDebugSpec(c, m, file) == false)
     return;
 
-  // lets get the current time of the day
-  #if defined(HAVE_GETTIMEOFDAY)
-  struct timeval* tp = &(m_pData->m_TimeMeasure[THREAD_TYPE]);
-  if(gettimeofday(tp, NULL) != 0)
-    return;
+  // lock the output stream
+  LOCK_OUTPUTSTREAM;
 
-  // convert the timeval in some human readable format
-  time_t starttime = tp->tv_sec + (tp->tv_usec/MICROSEC);
-  #elif defined(HAVE_GETTICKCOUNT)
-  time_t starttime = GetTickCount() / MILLISEC;
-  #else
-  time_t starttime = 0.0;
-  #warning "no supported time measurement function found!"
-  #endif
+  // update time information
+  UPDATE_TIMEINFO;
+
+  // lets get the current time of the day
+  time_t starttime = newtp.tv_sec + (newtp.tv_usec/MICROSEC);
 
   // now we convert that starttime to something human readable
   struct tm brokentime;
   #if defined(HAVE_LOCALTIME_R)
   localtime_r(&starttime, &brokentime);
   #else
-  #if defined(_WIN32)
-  memcpy(&brokentime, localtime(&starttime), sizeof(brokentime));
-  #else
   localtime_s(&brokentime, &starttime);
-  #endif
   #endif
   char buf[10];
   strftime(buf, sizeof(buf), "%T", &brokentime);
   char formattedTime[40];
-  snprintf(formattedTime, sizeof(formattedTime), "%s'%06ld", buf, tp->tv_usec);
+  snprintf(formattedTime, sizeof(formattedTime), "%s'%06ld", buf, newtp.tv_usec);
 
-  // lock the output stream
-  LOCK_OUTPUTSTREAM;
+  // save time measurement
+  memcpy(&(m_pData->m_TimeMeasure[THREAD_TYPE]), &newtp, sizeof(struct timeval));
 
   // check if the call is issued from a new thread or if this is an already
   // known one for which we have assigned an own ID
@@ -897,7 +966,8 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << THREAD_PREFIX_COLOR
+    std::cout << TIME_PREFIX_COLOR
+              << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_TIMEVAL_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << string << " started@"
@@ -905,7 +975,8 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
   }
   else
   {
-    std::cout << THREAD_PREFIX
+    std::cout << TIME_PREFIX
+              << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << string << " started@"
@@ -938,16 +1009,11 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
   if(m_pData->matchDebugSpec(c, m, file) == false)
     return;
 
-  // lets get the current time of the day
-  struct timeval newtp;
-  #if defined(HAVE_GETTIMEOFDAY)
-  if(gettimeofday(&newtp, NULL) != 0)
-    return;
-  #elif defined(HAVE_GETTICKCOUNT)
-  newtp.tv_sec = GetTickCount() / MILLISEC;
-  newtp.tv_usec = 0;
-  #warning "no supported time measurement function found!"
-  #endif
+  // lock the output stream
+  LOCK_OUTPUTSTREAM;
+
+  // update time information
+  UPDATE_TIMEINFO;
 
   // now we calculate the timedifference
   struct timeval* oldtp = &(m_pData->m_TimeMeasure[THREAD_TYPE]);
@@ -973,19 +1039,12 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
   #if defined(HAVE_LOCALTIME_R)
   localtime_r(&stoptime, &brokentime);
   #else
-  #if defined(_WIN32)
-  memcpy(&brokentime, localtime(&stoptime), sizeof(brokentime));
-  #else
   localtime_s(&brokentime, &stoptime);
-  #endif
   #endif
   char buf[10];
   strftime(buf, sizeof(buf), "%T", &brokentime);
   char formattedTime[40];
   snprintf(formattedTime, sizeof(formattedTime), "%s'%06ld", buf, newtp.tv_usec);
-
-  // lock the output stream
-  LOCK_OUTPUTSTREAM;
 
   // check if the call is issued from a new thread or if this is an already
   // known one for which we have assigned an own ID
@@ -993,7 +1052,8 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << THREAD_PREFIX_COLOR
+    std::cout << TIME_PREFIX_COLOR
+              << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_TIMEVAL_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << string << " stopped@"
@@ -1002,7 +1062,8 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
   }
   else
   {
-    std::cout << THREAD_PREFIX
+    std::cout << TIME_PREFIX
+              << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << string << " stopped@"
@@ -1038,6 +1099,12 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
   if(m_pData->matchDebugSpec(c, m, file) == false)
     return;
 
+  // lock the output stream
+  LOCK_OUTPUTSTREAM;
+
+  // update time information
+  UPDATE_TIMEINFO;
+
   // now we go and create the output string by using the dynamic
   // vasprintf() function
   va_list args;
@@ -1052,9 +1119,6 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
   vsnprintf(buf, STRINGSIZE, fmt, args);
   #endif
   va_end(args);
-
-  // lock the output stream
-  LOCK_OUTPUTSTREAM;
 
   // check if the call is issued from a new thread or if this is an already
   // known one for which we have assigned an own ID
@@ -1071,7 +1135,8 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
       default:          highlight = ANSI_ESC_FG_WHITE;  break;
     }
 
-    std::cout << THREAD_PREFIX_COLOR
+    std::cout << TIME_PREFIX_COLOR
+              << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << highlight
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << buf << ANSI_ESC_CLR
@@ -1079,7 +1144,8 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
   }
   else
   {
-    std::cout << THREAD_PREFIX
+    std::cout << TIME_PREFIX
+              << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << buf
