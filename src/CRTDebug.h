@@ -1,7 +1,7 @@
 /* vim:set ts=2 nowrap: ****************************************************
 
  librtdebug - A C++ based thread-safe Runtime Debugging Library
- Copyright (C) 2003-2006 by Jens Langner <Jens.Langner@light-speed.de>
+ Copyright (C) 2003-2019 Jens Maus <mail@jens-maus.de>
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -17,31 +17,29 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
- $Id$
-
 ***************************************************************************/
 
 #ifndef CRTDEBUG_H
 #define CRTDEBUG_H
 
 // debug classes
-#define DBC_CTRACE		(1<<0) // call tracing (ENTER/LEAVE etc.)
-#define DBC_REPORT		(1<<1) // reports (SHOWVALUE/SHOWSTRING etc.)
-#define DBC_ASSERT		(1<<2) // asserts (ASSERT)
-#define DBC_TIMEVAL		(1<<3) // time evaluations (STARTCLOCK/STOPCLOCK)
-#define DBC_DEBUG			(1<<4) // debugging output D()
-#define DBC_ERROR			(1<<5) // error output     E()
-#define DBC_WARNING		(1<<6) // warning output   W()
-#define DBC_ALL				(0xffffffff)
+#define DBC_CTRACE    (1<<0) // call tracing (ENTER/LEAVE etc.)
+#define DBC_REPORT    (1<<1) // reports (SHOWVALUE/SHOWSTRING etc.)
+#define DBC_ASSERT    (1<<2) // asserts (ASSERT)
+#define DBC_TIMEVAL   (1<<3) // time evaluations (STARTCLOCK/STOPCLOCK)
+#define DBC_DEBUG     (1<<4) // debugging output D()
+#define DBC_ERROR     (1<<5) // error output     E()
+#define DBC_WARNING   (1<<6) // warning output   W()
+#define DBC_ALL       (0xffffffff)
 
 // debug flags
-#define DBF_ALWAYS		(1<<0)
-#define DBF_STARTUP		(1<<1)
-#define DBF_ALL				(0xffffffff)
+#define DBF_ALWAYS    (1<<0)
+#define DBF_STARTUP   (1<<1)
+#define DBF_ALL       (0xffffffff)
 
 // debug modules
-#define DBM_NONE			NULL
-#define DBM_ALL				"all"
+#define DBM_NONE      NULL
+#define DBM_ALL       "all"
 
 // forward declarations
 class CRTDebugPrivate;
@@ -83,54 +81,54 @@ class CRTDebugPrivate;
 ////////////////////////////////////////////////////////////////////////////////
 class CRTDebug
 {
-	public:
-		// the static singleton instance method
-		static CRTDebug* instance();
-		static void destroy();
+  public:
+    // the static singleton instance method
+    static CRTDebug* instance();
+    static void destroy();
 
-		// for initialization via ENV variables
-		static void init(const char* variable=0);
+    // for initialization via ENV variables
+    static void init(const char* variable=0);
 
-		// our main debug output methods
-		void Enter(const int c, const char* m, const char* file, long line, const char* function);
-		void Leave(const int c, const char* m, const char* file, int line, const char* function);
-		void Return(const int c, const char* m, const char* file, int line, const char* function, long result);
-		void ShowValue(const int c, const char* m, long long value, int size, const char* name, const char* file, long line);
-		void ShowPointer(const int c, const char* m, void* pointer, const char* name, const char* file, long line);
-		void ShowString(const int c, const char* m, const char* string, const char* name, const char* file, long line);
-		void ShowMessage(const int c, const char* m, const char* string, const char* file, long line);
-		void StartClock(const int c, const char* m, const char* string, const char* file, long line);
-		void StopClock(const int c, const char* m, const char* string, const char* file, long line);
+    // our main debug output methods
+    void Enter(const int c, const char* m, const char* file, long line, const char* function);
+    void Leave(const int c, const char* m, const char* file, int line, const char* function);
+    void Return(const int c, const char* m, const char* file, int line, const char* function, long result);
+    void ShowValue(const int c, const char* m, long long value, int size, const char* name, const char* file, long line);
+    void ShowPointer(const int c, const char* m, void* pointer, const char* name, const char* file, long line);
+    void ShowString(const int c, const char* m, const char* string, const char* name, const char* file, long line);
+    void ShowMessage(const int c, const char* m, const char* string, const char* file, long line);
+    void StartClock(const int c, const char* m, const char* string, const char* file, long line);
+    void StopClock(const int c, const char* m, const char* string, const char* file, long line);
 
-		// some raw methods to format text like printf() does
-		void dprintf_header(const int c, const char* m, const char* file, long line, const char* fmt, ...);
-		void dprintf(const int c, const char* m, const char* fmt, ...);
+    // some raw methods to format text like printf() does
+    void dprintf_header(const int c, const char* m, const char* file, long line, const char* fmt, ...);
+    void dprintf(const int c, const char* m, const char* fmt, ...);
 
-		// general public methods to control debug class
-		unsigned int debugClasses() const;
-		unsigned int debugFlags() const;
-		const char* debugFiles() const;
-		const char* debugModules() const;
-		void setDebugClass(unsigned int cl);
-		void setDebugFlag(unsigned int fl);
-		void setDebugFile(const char* filename, bool show);
-		void setDebugModule(const char* module, bool show);
-		void clearDebugClass(unsigned int cl);
-		void clearDebugFlag(unsigned int fl);
-		void clearDebugFile(const char* filename);
-		void clearDebugModule(const char* module);
+    // general public methods to control debug class
+    unsigned int debugClasses() const;
+    unsigned int debugFlags() const;
+    const char* debugFiles() const;
+    const char* debugModules() const;
+    void setDebugClass(unsigned int cl);
+    void setDebugFlag(unsigned int fl);
+    void setDebugFile(const char* filename, bool show);
+    void setDebugModule(const char* module, bool show);
+    void clearDebugClass(unsigned int cl);
+    void clearDebugFlag(unsigned int fl);
+    void clearDebugFile(const char* filename);
+    void clearDebugModule(const char* module);
 
-		// methods to control additional options
-		bool highlighting() const;
-		void setHighlighting(bool on);
+    // methods to control additional options
+    bool highlighting() const;
+    void setHighlighting(bool on);
 
-	protected:
-		CRTDebug(const int dbclasses=0, const int dbflags=0);
-		~CRTDebug();
+  protected:
+    CRTDebug(const int dbclasses=0, const int dbflags=0);
+    ~CRTDebug();
 
-	private:
-		static CRTDebug*	m_pSingletonInstance;	//!< the singleton instance
-		CRTDebugPrivate*	m_pData;							//!< the private, internal rtdebug data
+  private:
+    static CRTDebug*  m_pSingletonInstance; //!< the singleton instance
+    CRTDebugPrivate*  m_pData;              //!< the private, internal rtdebug data
 };
 
 #endif // CRTDEBUG_H

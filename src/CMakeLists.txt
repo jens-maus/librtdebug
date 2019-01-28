@@ -1,7 +1,7 @@
 #/* vim:set ts=2 nowrap: ****************************************************
 #
 # librtdebug - A C++ based thread-safe Runtime Debugging Library
-# Copyright (C) 2003-2015 Jens Maus <mail@jens-maus.de>
+# Copyright (C) 2003-2019 Jens Maus <mail@jens-maus.de>
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -17,8 +17,6 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# $Id: README 3 2005-01-27 15:21:21Z langner $
-#
 #***************************************************************************/
 
 # check for certain functions to exist
@@ -27,6 +25,7 @@ check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
 check_function_exists(GetTickCount HAVE_GETTICKCOUNT)
 check_function_exists(vasprintf HAVE_VASPRINTF)
 check_function_exists(localtime_r HAVE_LOCALTIME_R)
+check_function_exists(localtime_s HAVE_LOCALTIME_S)
 
 # check if pthread library was found
 if(CMAKE_USE_PTHREADS_INIT)
