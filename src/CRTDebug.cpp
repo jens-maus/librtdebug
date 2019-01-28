@@ -119,9 +119,9 @@
   { \
     char fmtBuf[10]; \
     strftime(fmtBuf, sizeof(fmtBuf), "%T", &tm_time); \
-    snprintf(fmtTime, sizeof(fmtTime), "%s'%06ld", fmtBuf, (tp)->tv_usec); \
+    snprintf(fmtTime, sizeof(fmtTime), "%s.%06ld", fmtBuf, (tp)->tv_usec); \
   }
-#define TIME_PREFIX       "[" << fmtTime << "]:"
+#define TIME_PREFIX       "[" << fmtTime << "] "
 #define TIME_PREFIX_COLOR ANSI_ESC_FG_GREEN << TIME_PREFIX
 #else
 #define GET_TIMESTR(tp) (void(0))
@@ -142,7 +142,7 @@
 #define THREAD_ID           m_pData->m_ThreadID[THREAD_TYPE]
 #define THREAD_WIDTH        2
 #define THREAD_PREFIX       PROCESS_PREFIX << "." << std::setw(THREAD_WIDTH) << std::setfill('0') << std::dec << THREAD_ID << ": "
-#define THREAD_PREFIX_COLOR PROCESS_PREFIX << "." << ANSI_ESC_BG << std::dec << THREAD_ID%6 << "m" << \
+#define THREAD_PREFIX_COLOR ANSI_ESC_FG_YELLOW << PROCESS_PREFIX << "." << ANSI_ESC_BG << std::dec << THREAD_ID%6 << "m" << \
                             std::setw(THREAD_WIDTH) << std::setfill('0') << std::dec << THREAD_ID << ANSI_ESC_CLR << ": "
 #define THREAD_ID_CHECK     if(m_pData->m_ThreadID[THREAD_TYPE] == 0)\
                               m_pData->m_ThreadID[THREAD_TYPE] = ++(m_pData->m_iThreadCount)
@@ -177,6 +177,7 @@ class CRTDebugPrivate
   // methods
   public:
     bool matchDebugSpec(const int cl, const char* module, const char* file);
+    bool matchInfoSpec(const int cl, const char* module, const char* file);
 
   // data
   public:
@@ -185,10 +186,15 @@ class CRTDebugPrivate
     std::map<pthread_t, unsigned int>   m_IdentLevel;         //!< different ident levels for different threads
     std::map<pthread_t, struct timeval> m_TimeMeasure;        //!< for measuring the time we need more structs
     bool                                m_bHighlighting;      //!< text ANSI highlighting?
+    bool                                m_bDebugMode;         //!< is compile-time debugging enabled
     unsigned int                        m_iDebugClasses;      //!< the currently active debug classes
     std::map<std::string, bool>         m_DebugModules;       //!< to map actual specified debug modules
     std::map<std::string, bool>         m_DebugFiles;         //!< to map actual specified source file names*/
     unsigned int                        m_iDebugFlags;        //!< the currently active debug flags
+    unsigned int                        m_iInfoClasses;       //!< the currently active debug classes
+    std::map<std::string, bool>         m_InfoModules;        //!< to map actual specified debug modules
+    std::map<std::string, bool>         m_InfoFiles;          //!< to map actual specified source file names*/
+    unsigned int                        m_iInfoFlags;         //!< the currently active debug flags
     unsigned int                        m_iThreadCount;       //!< counter of total number of threads processing
 
     #if defined(HAVE_LIBPTHREAD)
@@ -268,17 +274,23 @@ void CRTDebug::destroy()
 //! via getenv() so that only certain predefined debug messages will be output,
 //!
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::init(const char* variable)
+void CRTDebug::init(const char* variable, const bool debugMode)
 {
   CRTDebug* rtdebug = CRTDebug::instance();
+
+  if(debugMode == true)
+    std::cerr << "*** rtdebug v" << PROJECT_VERSION << " (" << __DATE__ << ") runtime debugging framework startup ***********" << std::endl;
 
   // if the user has specified an environment variable we
   // go and parse it accordingly.
   if(variable != NULL)
   {
-    std::cout << "*** parsing ENV variable: '" << variable << "' for debug options." << "\r\n"
-              << "*** for tokens: '@' class, '+' flags, '&' name, '%' module" << "\r\n"
-              << "*** --------------------------------------------------------------------------" << "\r\n";
+    if(debugMode == true)
+    {
+      std::cerr << "*** parsing ENV variable: '" << variable << "' for debug options." << std::endl
+                << "*** for tokens: '@' class, '+' flags, '&' name, '%' module" << std::endl
+                << "*** --------------------------------------------------------------------------" << std::endl;
+    }
 
     char* var = getenv(variable);
     if(var != NULL)
@@ -335,7 +347,8 @@ void CRTDebug::init(const char* variable)
             {
               if(strncasecmp(s+1, dbclasses[i].token, strlen(dbclasses[i].token)) == 0)
               {
-                std::cout << "*** @dbclass: " << (!negate ? "show" : "hide") << " '" << dbclasses[i].token << "' output" << "\r\n";
+                if(debugMode == true)
+                  std::cerr << "*** @dbclass: " << (!negate ? "show" : "hide") << " '" << dbclasses[i].token << "' output" << std::endl;
 
                 if(negate)
                   rtdebug->m_pData->m_iDebugClasses &= ~dbclasses[i].flag;
@@ -361,7 +374,8 @@ void CRTDebug::init(const char* variable)
             {
               if(strncasecmp(s+1, dbflags[i].token, strlen(dbflags[i].token)) == 0)
               {
-                std::cout << "*** +dbflag.: " << (!negate ? "show" : "hide") << " '" << dbflags[i].token << "' output" << "\r\n";
+                if(debugMode == true)
+                  std::cerr << "*** +dbflag.: " << (!negate ? "show" : "hide") << " '" << dbflags[i].token << "' output" << std::endl;
 
                 if(negate)
                   rtdebug->m_pData->m_iDebugFlags &= ~dbflags[i].flag;
@@ -390,7 +404,8 @@ void CRTDebug::init(const char* variable)
 
             // lets add the lowercase token to our sourcefilemap.
             rtdebug->m_pData->m_DebugFiles[token] = !negate;
-            std::cout << "*** &name...: " << (!negate ? "show" : "hide") << " '" << token << "' output" << "\r\n";
+            if(debugMode == true)
+              std::cerr << "*** &name...: " << (!negate ? "show" : "hide") << " '" << token << "' output" << std::endl;
           }
           break;
 
@@ -412,8 +427,8 @@ void CRTDebug::init(const char* variable)
 
             // lets add the lowercase token to our sourcefilemap.
             rtdebug->m_pData->m_DebugModules[token] = !negate;
-            std::cout << "*** %module.: " << (!negate ? "show" : "hide") << " '" << token << "' output" << "\r\n";
-
+            if(debugMode == true)
+              std::cerr << "*** %module.: " << (!negate ? "show" : "hide") << " '" << token << "' output" << std::endl;
           }
           break;
 
@@ -421,7 +436,9 @@ void CRTDebug::init(const char* variable)
           {
             if(strncasecmp(s, "ansi", 4) == 0)
             {
-              std::cout << "*** switching " << (!negate ? "on" : "off") << " ANSI color output" << "\r\n";
+              if(debugMode == true)
+                std::cerr << "*** switching " << (!negate ? "on" : "off") << " ANSI color output" << std::endl;
+
               rtdebug->m_pData->m_bHighlighting = !negate;
             }
           }
@@ -434,13 +451,20 @@ void CRTDebug::init(const char* variable)
           break;
       }
 
-      std::cout << "*** --------------------------------------------------------------------------" << "\r\n";
+      if(debugMode == true)
+        std::cerr << "*** --------------------------------------------------------------------------" << std::endl;
     }
 
-    std::cout << "*** active debug classes/flags: 0x" << std::setw(8) << std::setfill('0') << std::hex << rtdebug->debugClasses()
-              << "/0x" << std::setw(8) << std::setfill('0') << std::hex << rtdebug->debugFlags() << std::dec << "\r\n";
-    std::cout << "*** Normal processing follows ************************************************" << "\r\n";
+    if(debugMode == true)
+    {
+      std::cerr << "*** active debug classes/flags: 0x" << std::setw(8) << std::setfill('0') << std::hex << rtdebug->debugClasses()
+                << "/0x" << std::setw(8) << std::setfill('0') << std::hex << rtdebug->debugFlags() << std::dec << std::endl
+                << "*** Normal processing follows ************************************************" << std::endl;
+    }
   }
+
+  // save compile-time debug mode flag
+  rtdebug->m_pData->m_bDebugMode = debugMode;
 }
 
 //  Class:       CRTDebug
@@ -449,7 +473,8 @@ void CRTDebug::init(const char* variable)
 //! Construct a CRTDebug object.
 //!
 ////////////////////////////////////////////////////////////////////////////////
-CRTDebug::CRTDebug(const int dbclasses, const int dbflags)
+CRTDebug::CRTDebug(const int dbclasses, const int dbflags,
+                   const int infoclasses, const int infoflags)
 {
   // allocate data from our private instance class
   m_pData = new CRTDebugPrivate();
@@ -459,6 +484,8 @@ CRTDebug::CRTDebug(const int dbclasses, const int dbflags)
   m_pData->m_bHighlighting = true;
   m_pData->m_iDebugClasses = dbclasses;
   m_pData->m_iDebugFlags = dbflags;
+  m_pData->m_iInfoClasses = infoclasses;
+  m_pData->m_iInfoFlags = infoflags;
   m_pData->m_iThreadCount = 0;
 
   #if defined(HAVE_LIBPTHREAD)
@@ -472,7 +499,16 @@ CRTDebug::CRTDebug(const int dbclasses, const int dbflags)
   if(m_pData->m_iDebugFlags == 0)
     m_pData->m_iDebugFlags = DBF_ALWAYS | DBF_STARTUP;
 
-  std::cout << "*** rtdebug v" << PROJECT_VERSION << " (" << __DATE__ << ") runtime debugging framework startup ***********" << "\r\n";
+  // now we see if we have to apply some default settings or not.
+  if(m_pData->m_iInfoClasses == 0)
+  {
+    m_pData->m_iInfoClasses = INC_INFO | INC_WARNING | INC_ERROR | INC_FATAL;
+    if(m_pData->m_bDebugMode == true)
+      m_pData->m_iInfoClasses |= INC_VERBOSE | INC_DEBUG;
+  }
+
+  if(m_pData->m_iInfoFlags == 0)
+    m_pData->m_iInfoFlags = INF_ALWAYS | INF_STARTUP;
 }
 
 //  Class:       CRTDebug
@@ -487,7 +523,8 @@ CRTDebug::~CRTDebug()
   pthread_mutex_destroy(&(m_pData->m_pCoutMutex));
   #endif
 
-  std::cout << "*** rtdebug framework shutdowned *********************************************" << "\r\n";
+  if(m_pData->m_bDebugMode == true)
+    std::cerr << "*** rtdebug framework shutdowned *********************************************" << std::endl;
 }
 
 //  Class:       CRTDebug
@@ -523,20 +560,20 @@ void CRTDebug::Enter(const int c, const char* m, const char* file, long line,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << TIME_PREFIX_COLOR
+    std::cerr << TIME_PREFIX_COLOR
               << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_CTRACE_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
               << std::dec << line << ":Entering " << function << "()"
-              << ANSI_ESC_CLR << "\r\n";
+              << ANSI_ESC_CLR << std::endl;
   }
   else
   {
-    std::cout << TIME_PREFIX
+    std::cerr << TIME_PREFIX
               << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
-              << std::dec << line << ":Entering " << function << "()" << "\r\n";
+              << std::dec << line << ":Entering " << function << "()" << std::endl;
   }
 
   // increase the indention level
@@ -582,20 +619,20 @@ void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << TIME_PREFIX_COLOR
+    std::cerr << TIME_PREFIX_COLOR
               << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_CTRACE_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
               << std::dec << line << ":Leaving " << function << "()"
-              << ANSI_ESC_CLR << "\r\n";
+              << ANSI_ESC_CLR << std::endl;
   }
   else
   {
-    std::cout << TIME_PREFIX
+    std::cerr << TIME_PREFIX
               << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
-              << std::dec << line << ":Leaving " << function << "()" << "\r\n";
+              << std::dec << line << ":Leaving " << function << "()" << std::endl;
   }
 
   // unlock the output stream
@@ -639,23 +676,23 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << TIME_PREFIX_COLOR
+    std::cerr << TIME_PREFIX_COLOR
               << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_CTRACE_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
               << std::dec << line << ":Leaving " << function << "() (result 0x"
               << std::hex << std::setw(8) << std::setfill('0') << result << ", "
-              << std::dec << result << ")" << ANSI_ESC_CLR << std::dec << "\r\n";
+              << std::dec << result << ")" << ANSI_ESC_CLR << std::dec << std::endl;
   }
   else
   {
-    std::cout << TIME_PREFIX
+    std::cerr << TIME_PREFIX
               << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file) << ":"
               << std::dec << line << ":Leaving " << function << "() (result 0x"
               << std::hex << std::setw(8) << std::setfill('0') << result << ", "
-              << std::dec << result << ")" << std::dec << "\r\n";
+              << std::dec << result << ")" << std::dec << std::endl;
   }
 
   // unlock the output stream
@@ -698,7 +735,7 @@ void CRTDebug::ShowValue(const int c, const char* m, long long value, int size,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << TIME_PREFIX_COLOR
+    std::cerr << TIME_PREFIX_COLOR
               << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_REPORT_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
@@ -708,7 +745,7 @@ void CRTDebug::ShowValue(const int c, const char* m, long long value, int size,
   }
   else
   {
-    std::cout << TIME_PREFIX
+    std::cerr << TIME_PREFIX
               << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
@@ -721,19 +758,19 @@ void CRTDebug::ShowValue(const int c, const char* m, long long value, int size,
   {
     if(value < ' ' || (value >= 127 && value <= 160))
     {
-      std::cout << ", '" << std::hex << std::setw(2) << std::setfill('0') << value
+      std::cerr << ", '" << std::hex << std::setw(2) << std::setfill('0') << value
                 << "'";
     }
     else
     {
-      std::cout << ", '" << (char)value << "'";
+      std::cerr << ", '" << (char)value << "'";
     }
   }
 
   if(m_pData->m_bHighlighting)
-    std::cout << ANSI_ESC_CLR;
+    std::cerr << ANSI_ESC_CLR;
 
-  std::cout << std::dec << "\r\n";
+  std::cerr << std::dec << std::endl;
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
@@ -772,7 +809,7 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << TIME_PREFIX_COLOR
+    std::cerr << TIME_PREFIX_COLOR
               << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_REPORT_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
@@ -780,7 +817,7 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
   }
   else
   {
-    std::cout << TIME_PREFIX
+    std::cerr << TIME_PREFIX
               << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
@@ -788,14 +825,14 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
   }
 
   if(pointer != NULL)
-    std::cout << "0x" << std::hex << std::setw(8) << std::setfill('0') << pointer;
+    std::cerr << "0x" << std::hex << std::setw(8) << std::setfill('0') << pointer;
   else
-    std::cout << "NULL";
+    std::cerr << "NULL";
 
   if(m_pData->m_bHighlighting)
-    std::cout << ANSI_ESC_CLR;
+    std::cerr << ANSI_ESC_CLR;
 
-  std::cout << std::dec << "\r\n";
+  std::cerr << std::dec << std::endl;
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
@@ -837,23 +874,23 @@ void CRTDebug::ShowString(const int c, const char* m, const char* string,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << TIME_PREFIX_COLOR
+    std::cerr << TIME_PREFIX_COLOR
               << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_REPORT_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << name << " = 0x" << std::hex
               << std::setw(8) << std::setfill('0') << string << " \""
-              << string << "\"" << ANSI_ESC_CLR << std::dec << "\r\n";
+              << string << "\"" << ANSI_ESC_CLR << std::dec << std::endl;
   }
   else
   {
-    std::cout << TIME_PREFIX
+    std::cerr << TIME_PREFIX
               << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << name << " = 0x" << std::hex
               << std::setw(8) << std::setfill('0') << string << " \""
-              << string << "\"" << std::dec << "\r\n";
+              << string << "\"" << std::dec << std::endl;
   }
 
   // unlock the output stream
@@ -893,20 +930,20 @@ void CRTDebug::ShowMessage(const int c, const char* m, const char* string,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << TIME_PREFIX_COLOR
+    std::cerr << TIME_PREFIX_COLOR
               << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_REPORT_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << string << ANSI_ESC_CLR
-              << "\r\n";
+              << std::endl;
   }
   else
   {
-    std::cout << TIME_PREFIX
+    std::cerr << TIME_PREFIX
               << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
-              << ":" << std::dec << line << ":" << string << "\r\n";
+              << ":" << std::dec << line << ":" << string << std::endl;
   }
 
   // unlock the output stream
@@ -955,7 +992,7 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
   char buf[10];
   strftime(buf, sizeof(buf), "%T", &brokentime);
   char formattedTime[40];
-  snprintf(formattedTime, sizeof(formattedTime), "%s'%06ld", buf, newtp.tv_usec);
+  snprintf(formattedTime, sizeof(formattedTime), "%s.%06ld", buf, newtp.tv_usec);
 
   // save time measurement
   memcpy(&(m_pData->m_TimeMeasure[THREAD_TYPE]), &newtp, sizeof(struct timeval));
@@ -966,21 +1003,21 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << TIME_PREFIX_COLOR
+    std::cerr << TIME_PREFIX_COLOR
               << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_TIMEVAL_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << string << " started@"
-              << formattedTime << ANSI_ESC_CLR << "\r\n";
+              << formattedTime << ANSI_ESC_CLR << std::endl;
   }
   else
   {
-    std::cout << TIME_PREFIX
+    std::cerr << TIME_PREFIX
               << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << string << " started@"
-              << formattedTime << "\r\n";
+              << formattedTime << std::endl;
   }
 
   // unlock the output stream
@@ -1044,7 +1081,7 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
   char buf[10];
   strftime(buf, sizeof(buf), "%T", &brokentime);
   char formattedTime[40];
-  snprintf(formattedTime, sizeof(formattedTime), "%s'%06ld", buf, newtp.tv_usec);
+  snprintf(formattedTime, sizeof(formattedTime), "%s.%06ld", buf, newtp.tv_usec);
 
   // check if the call is issued from a new thread or if this is an already
   // known one for which we have assigned an own ID
@@ -1052,23 +1089,23 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 
   if(m_pData->m_bHighlighting)
   {
-    std::cout << TIME_PREFIX_COLOR
+    std::cerr << TIME_PREFIX_COLOR
               << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << DBC_TIMEVAL_COLOR
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << string << " stopped@"
               << formattedTime << " = " << std::fixed << std::setprecision(6) << difftime << "s"
-              << ANSI_ESC_CLR << "\r\n";
+              << ANSI_ESC_CLR << std::endl;
   }
   else
   {
-    std::cout << TIME_PREFIX
+    std::cerr << TIME_PREFIX
               << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << string << " stopped@"
               << formattedTime << " = " << std::fixed << std::setprecision(6) << difftime << "s"
-              << "\r\n";
+              << std::endl;
   }
 
   // unlock the output stream
@@ -1076,7 +1113,7 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 }
 
 //  Class:       CRTDebug
-//  Method:      dprintf_header
+//  Method:      dprintf
 //!
 //! Autoformatting debug message method which will format a provided formatstring
 //! in a printf()-like format and output the resulting string together with the
@@ -1092,8 +1129,8 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 //! @param       fmt  the format string
 //! @param       ...  a vararg list of parameters.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
-                              long line, const char* fmt, ...)
+void CRTDebug::dprintf(const int c, const char* m, const char* file,
+                       long line, const char* fmt, ...)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
@@ -1135,21 +1172,21 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
       default:          highlight = ANSI_ESC_FG_WHITE;  break;
     }
 
-    std::cout << TIME_PREFIX_COLOR
+    std::cerr << TIME_PREFIX_COLOR
               << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << highlight
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << buf << ANSI_ESC_CLR
-              << "\r\n";
+              << std::endl;
   }
   else
   {
-    std::cout << TIME_PREFIX
+    std::cerr << TIME_PREFIX
               << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":" << buf
-              << "\r\n";
+              << std::endl;
   }
 
   // unlock the output stream
@@ -1160,25 +1197,34 @@ void CRTDebug::dprintf_header(const int c, const char* m, const char* file,
 }
 
 //  Class:       CRTDebug
-//  Method:      dprintf
+//  Method:      printf
 //!
 //! Autoformatting debug message method which will format a provided formatstring
-//! in a printf()-like format and output the resulting string.
+//! in a printf()-like format and output the resulting string together with the
+//! default debugging header.
 //!
-//! This method is invoked by the mixed-case macros to output user dependant
-//! information strings to the user. It will also take care of ANSI color
-//! highlighting if enabled.
+//! This method is invoked by the D() E() and W() macros to output a simple string
+//! within a predefined debugging class and group.
 //!
-//! @param       c   the debug class on which the output should be done.
-//! @param       g   the debug group in which this message belongs.
-//! @param       fmt the format string
-//! @param       ... a vararg list of parameters.
+//! @param       c    the debug class on which the output should be done.
+//! @param       g    the debug group in which this message belongs.
+//! @param       file the filename of the source file.
+//! @param       line the line number on which the macro was placed
+//! @param       fmt  the format string
+//! @param       ...  a vararg list of parameters.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
+void CRTDebug::printf(const int c, const char* m, const char* file,
+                      long line, const char* fmt, ...)
 {
   // check if we should really output something
-  if(m_pData->matchDebugSpec(c, m, NULL) == false)
+  if(m_pData->matchInfoSpec(c, m, file) == false)
     return;
+
+  // lock the output stream
+  LOCK_OUTPUTSTREAM;
+
+  // update time information
+  UPDATE_TIMEINFO;
 
   // now we go and create the output string by using the dynamic
   // vasprintf() function
@@ -1195,48 +1241,52 @@ void CRTDebug::dprintf(const int c, const char* m, const char* fmt, ...)
   #endif
   va_end(args);
 
-  // lock the output stream
-  LOCK_OUTPUTSTREAM;
-
   // check if the call is issued from a new thread or if this is an already
   // known one for which we have assigned an own ID
   THREAD_ID_CHECK;
 
-  #ifdef DEBUG
   if(m_pData->m_bHighlighting)
   {
+    const char *highlight;
     switch(c)
     {
-      case DBC_DEBUG:   std::cout << DBC_DEBUG_COLOR << "Debug..: "; break;
-      case DBC_ERROR:   std::cout << DBC_ERROR_COLOR << "Error..: "; break;
-      case DBC_WARNING: std::cout << DBC_WARNING_COLOR << "Warning: "; break;
-      default:          std::cout << ANSI_ESC_FG_WHITE << "Info...: "; break;
+      case INC_DEBUG:   highlight = DBC_DEBUG_COLOR;    break;
+      case INC_ERROR:   highlight = DBC_ERROR_COLOR;    break;
+      case INC_FATAL:   highlight = DBC_ERROR_COLOR;    break;
+      case INC_WARNING: highlight = DBC_WARNING_COLOR;  break;
+      default:          highlight = ANSI_ESC_FG_WHITE;  break;
+    }
+
+    if(file != NULL)
+    {
+      std::cout << TIME_PREFIX_COLOR
+                << THREAD_PREFIX_COLOR
+                << INDENT_OUTPUT << highlight
+                << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
+                << ":" << std::dec << line << ":"
+                << buf << ANSI_ESC_CLR
+                << std::endl;
+    }
+    else
+    {
+      std::cout << highlight
+                << buf << ANSI_ESC_CLR 
+                << std::endl;
     }
   }
   else
   {
-    switch(c)
+    if(file != NULL)
     {
-      case DBC_DEBUG:   std::cout << "Debug..: "; break;
-      case DBC_ERROR:   std::cout << "Error..: "; break;
-      case DBC_WARNING: std::cout << "Warning: "; break;
-      default:          std::cout << "Info...: "; break;
+      std::cout << TIME_PREFIX
+                << THREAD_PREFIX
+                << INDENT_OUTPUT
+                << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
+                << ":" << std::dec << line << ":";
     }
+    
+    std::cout << buf << std::endl;
   }
-  #else
-  if(m_pData->m_bHighlighting)
-  {
-    switch(c)
-    {
-      case DBC_DEBUG:   std::cout << DBC_DEBUG_COLOR; break;
-      case DBC_ERROR:   std::cout << DBC_ERROR_COLOR; break;
-      case DBC_WARNING: std::cout << DBC_WARNING_COLOR; break;
-      default:          std::cout << ANSI_ESC_FG_WHITE; break;
-    }
-  }
-  #endif
-
-  std::cout << buf << ANSI_ESC_CLR << "\r\n";
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
@@ -1387,6 +1437,45 @@ bool CRTDebugPrivate::matchDebugSpec(const int cl, const char* module, const cha
   {
     std::map<std::string, bool>::iterator it = m_DebugModules.find(module);
     if(it != m_DebugModules.end())
+    {
+      if((*it).second == true)
+        result = true;
+      else
+        result = false;
+    }
+  }
+
+  return result;
+}
+
+bool CRTDebugPrivate::matchInfoSpec(const int cl, const char* module, const char* file)
+{
+  bool result = false;
+
+  // first we check if we need to process this debug message or not,
+  // depending on the currently set debug level
+  if(((m_iInfoClasses & cl)) != 0)
+    result = true;
+
+  // now we search through our sourcefileMap and see if we should suppress
+  // the output or force it.
+  if(file != NULL)
+  {
+    NameCompare cmp(file);
+    std::map<std::string, bool>::iterator iter = find_if(m_InfoFiles.begin(), m_InfoFiles.end(), cmp);
+    if(iter != m_InfoFiles.end())
+    {
+      if((*iter).second == true)
+        result = true;
+      else
+        result = false;
+    }
+  }
+
+  if(module != NULL)
+  {
+    std::map<std::string, bool>::iterator it = m_InfoModules.find(module);
+    if(it != m_InfoModules.end())
     {
       if((*it).second == true)
         result = true;

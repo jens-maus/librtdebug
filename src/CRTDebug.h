@@ -41,6 +41,24 @@
 #define DBM_NONE      NULL
 #define DBM_ALL       "all"
 
+// info classes
+#define INC_INFO      (1<<0) // Info()
+#define INC_VERBOSE   (1<<1) // Verbose()
+#define INC_WARNING   (1<<2) // Warning()
+#define INC_ERROR     (1<<3) // Error()
+#define INC_FATAL     (1<<4) // Fatal()
+#define INC_DEBUG     (1<<5) // Debug()
+#define INC_ALL       (0xffffffff)
+
+// info flags
+#define INF_ALWAYS    (1<<0)
+#define INF_STARTUP   (1<<1)
+#define INF_ALL       (0xffffffff)
+
+// info modules
+#define INM_NONE      NULL
+#define INM_ALL       "all"
+
 // forward declarations
 class CRTDebugPrivate;
 
@@ -87,7 +105,7 @@ class CRTDebug
     static void destroy();
 
     // for initialization via ENV variables
-    static void init(const char* variable=0);
+    static void init(const char* variable=0, const bool debugMode=false);
 
     // our main debug output methods
     void Enter(const int c, const char* m, const char* file, long line, const char* function);
@@ -101,8 +119,8 @@ class CRTDebug
     void StopClock(const int c, const char* m, const char* string, const char* file, long line);
 
     // some raw methods to format text like printf() does
-    void dprintf_header(const int c, const char* m, const char* file, long line, const char* fmt, ...);
-    void dprintf(const int c, const char* m, const char* fmt, ...);
+    void dprintf(const int c, const char* m, const char* file, long line, const char* fmt, ...);
+    void printf(const int c, const char* m, const char* file, long line, const char* fmt, ...);
 
     // general public methods to control debug class
     unsigned int debugClasses() const;
@@ -123,7 +141,8 @@ class CRTDebug
     void setHighlighting(bool on);
 
   protected:
-    CRTDebug(const int dbclasses=0, const int dbflags=0);
+    CRTDebug(const int dbclasses=0, const int dbflags=0,
+             const int infoclasses=0, const int infoflags=0);
     ~CRTDebug();
 
   private:

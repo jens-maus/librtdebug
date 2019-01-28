@@ -30,24 +30,6 @@
 //! Please take a look at the CRTDebug.h header file for a more
 //! detailed information about the ideas behind that debugging mechanism
 
-// redefine the Qt's own debug system
-#ifdef qDebug
-#undef qDebug
-#define qDebug  D
-#endif
-#ifdef qWarning
-#undef qWarning
-#define qWarning W
-#endif
-#ifdef qCritical
-#undef qCritical
-#define qCritical E
-#endif
-#ifdef qFatal
-#undef qFatal
-#define qFatal E
-#endif
-
 #include <CRTDebug.h>
 
 // first we make sure all previously defined symbols are undefined now so
@@ -107,6 +89,10 @@
 #undef Info
 #endif
 
+#if !defined(INFO_MODULE)
+#define INFO_MODULE INM_NONE
+#endif
+
 #if defined(DEBUG)
 
 #include <stdlib.h>
@@ -125,23 +111,32 @@
 #define SHOWMSG(m)      CRTDebug::instance()->ShowMessage(DBC_REPORT, DEBUG_MODULE, m, __FILE__, __LINE__)
 #define STARTCLOCK(s)   CRTDebug::instance()->StartClock(DBC_TIMEVAL, DEBUG_MODULE,  s, __FILE__, __LINE__)
 #define STOPCLOCK(s)    CRTDebug::instance()->StopClock(DBC_TIMEVAL, DEBUG_MODULE, s, __FILE__, __LINE__)
-#define D(s, vargs...)  CRTDebug::instance()->dprintf_header(DBC_DEBUG, DEBUG_MODULE, __FILE__, __LINE__, s, ## vargs)
-#define E(s, vargs...)  CRTDebug::instance()->dprintf_header(DBC_ERROR, DEBUG_MODULE, __FILE__, __LINE__, s, ## vargs)
-#define W(s, vargs...)  CRTDebug::instance()->dprintf_header(DBC_WARNING, DEBUG_MODULE, __FILE__, __LINE__, s, ## vargs)
+#define D(s, vargs...)  CRTDebug::instance()->dprintf(DBC_DEBUG, DEBUG_MODULE, __FILE__, __LINE__, s, ## vargs)
+#define E(s, vargs...)  CRTDebug::instance()->dprintf(DBC_ERROR, DEBUG_MODULE, __FILE__, __LINE__, s, ## vargs)
+#define W(s, vargs...)  CRTDebug::instance()->dprintf(DBC_WARNING, DEBUG_MODULE, __FILE__, __LINE__, s, ## vargs)
 #define ASSERT(expression)      \
   ((void)                       \
    ((expression) ? 0 :          \
     (                           \
-     CRTDebug::instance()->dprintf_header(DBC_ASSERT,   \
-                                          DEBUG_MODULE, \
-                                          __FILE__,     \
-                                          __LINE__,     \
-                                          "failed assertion '%s'", #expression), \
+     CRTDebug::instance()->dprintf(DBC_ASSERT,   \
+                                   DEBUG_MODULE, \
+                                   __FILE__,     \
+                                   __LINE__,     \
+                                   "failed assertion '%s'", #expression), \
      abort(),                   \
      0                          \
     )                           \
    )                            \
   )
+
+// define some information messages which will also be compiled in no matter
+// if there is debug mode enabled or not
+#define Info(s, vargs...)    CRTDebug::instance()->printf(INC_INFO, INFO_MODULE, __FILE__, __LINE__, s, ## vargs)
+#define Verbose(s, vargs...) CRTDebug::instance()->printf(INC_VERBOSE, INFO_MODULE, __FILE__, __LINE__, s, ## vargs)
+#define Warning(s, vargs...) CRTDebug::instance()->printf(INC_WARNING, INFO_MODULE, __FILE__, __LINE__, s, ## vargs)
+#define Error(s, vargs...)   CRTDebug::instance()->printf(INC_ERROR, INFO_MODULE, __FILE__, __LINE__, s, ## vargs)
+#define Fatal(s, vargs...)   CRTDebug::instance()->printf(INC_FATAL, INFO_MODULE, __FILE__, __LINE__, s, ## vargs)
+#define Debug(s, vargs...)   CRTDebug::instance()->printf(INC_DEBUG, INFO_MODULE, __FILE__, __LINE__, s, ## vargs)
 
 #else // DEBUG
 
@@ -159,5 +154,37 @@
 #define W(s, vargs...)      (void(0))
 #define ASSERT(expression)  (void(0))
 
+// define some information messages which will also be compiled in no matter
+// if there is debug mode enabled or not
+#define Info(s, vargs...)    CRTDebug::instance()->printf(INC_INFO, INFO_MODULE, 0, 0, s, ## vargs)
+#define Verbose(s, vargs...) CRTDebug::instance()->printf(INC_VERBOSE, INFO_MODULE, 0, 0, s, ## vargs)
+#define Warning(s, vargs...) CRTDebug::instance()->printf(INC_WARNING, INFO_MODULE, 0, 0, s, ## vargs)
+#define Error(s, vargs...)   CRTDebug::instance()->printf(INC_ERROR, INFO_MODULE, 0, 0, s, ## vargs)
+#define Fatal(s, vargs...)   CRTDebug::instance()->printf(INC_FATAL, INFO_MODULE, 0, 0, s, ## vargs)
+#define Debug(s, vargs...)   CRTDebug::instance()->printf(INC_DEBUG, INFO_MODULE, 0, 0, s, ## vargs)
+
 #endif // DEBUG
+
+// redefine the Qt's own debug system
+#ifdef qInfo
+#undef qInfo
+#define qInfo Info
+#endif
+#ifdef qDebug
+#undef qDebug
+#define qDebug Debug
+#endif
+#ifdef qWarning
+#undef qWarning
+#define qWarning Warning
+#endif
+#ifdef qCritical
+#undef qCritical
+#define qCritical Error
+#endif
+#ifdef qFatal
+#undef qFatal
+#define qFatal Fatal
+#endif
+
 #endif // RTDEBUG_H
