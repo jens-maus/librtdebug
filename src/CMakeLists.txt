@@ -26,6 +26,7 @@ check_function_exists(GetTickCount HAVE_GETTICKCOUNT)
 check_function_exists(vasprintf HAVE_VASPRINTF)
 check_function_exists(localtime_r HAVE_LOCALTIME_R)
 check_function_exists(localtime_s HAVE_LOCALTIME_S)
+check_function_exists(localtime HAVE_LOCALTIME)
 check_function_exists(strftime HAVE_STRFTIME)
 
 # check if pthread library was found

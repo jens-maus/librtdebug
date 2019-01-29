@@ -103,9 +103,11 @@
 #endif
 
 #if defined(HAVE_LOCALTIME_R)
-  #define LOCALTIME(tm, tt) localtime_r((tt), (tm))
+  #define LOCALTIME(tm_time, tt_time) localtime_r((tt_time), (tm_time))
 #elif defined(HAVE_LOCALTIME_S)
-  #define LOCALTIME(tm, tt) localtime_s((tm), (tt))
+  #define LOCALTIME(tm_time, tt_time) localtime_s((tm_time), (tt_time))
+#elif defined(HAVE_LOCALTIME)
+  #define LOCALTIME(tm_time, tt_time) memcpy((tm_time), localtime((tt_time)), sizeof(struct tm))
 #else
   #error "no matching localtime() function"
 #endif
@@ -279,7 +281,7 @@ void CRTDebug::init(const char* variable, const bool debugMode)
   CRTDebug* rtdebug = CRTDebug::instance();
 
   if(debugMode == true)
-    std::cerr << "*** rtdebug v" << PROJECT_VERSION << " (" << __DATE__ << ") runtime debugging framework startup ***********" << std::endl;
+    std::cerr << "*** " << PROJECT_LONGNAME << " v" << PROJECT_VERSION << " (" << __DATE__ << ") runtime debugging framework startup ***********" << std::endl;
 
   // if the user has specified an environment variable we
   // go and parse it accordingly.
@@ -524,7 +526,7 @@ CRTDebug::~CRTDebug()
   #endif
 
   if(m_pData->m_bDebugMode == true)
-    std::cerr << "*** rtdebug framework shutdowned *********************************************" << std::endl;
+    std::cerr << "*** " << PROJECT_LONGNAME << " framework shutdowned *********************************************" << std::endl;
 }
 
 //  Class:       CRTDebug
@@ -986,8 +988,10 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
   struct tm brokentime;
   #if defined(HAVE_LOCALTIME_R)
   localtime_r(&starttime, &brokentime);
-  #else
+  #elif defined(HAVE_LOCALTIME_S)
   localtime_s(&brokentime, &starttime);
+  #elif defined(HAVE_LOCALTIME)
+  memcpy(&brokentime, localtime(&starttime), sizeof(brokentime));
   #endif
   char buf[10];
   strftime(buf, sizeof(buf), "%T", &brokentime);
@@ -1075,8 +1079,10 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
   struct tm brokentime;
   #if defined(HAVE_LOCALTIME_R)
   localtime_r(&stoptime, &brokentime);
-  #else
+  #elif defined(HAVE_LOCALTIME_S)
   localtime_s(&brokentime, &stoptime);
+  #elif defined(HAVE_LOCALTIME)
+  memcpy(&brokentime, localtime(&stoptime), sizeof(brokentime));
   #endif
   char buf[10];
   strftime(buf, sizeof(buf), "%T", &brokentime);
