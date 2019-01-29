@@ -54,25 +54,39 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 if(CMAKE_CROSS_COMPILING)
   set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
   set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
-  set(PETLIB_PATH "/usr/local/petlib/${CROSS_OS}")
-else()
+endif()
+
+# set the search+install prefix
+if(NOT PREFIX_PATH)
   if(MSYS)
-    set(PETLIB_PATH "C:/MinGW/msys/1.0/local/petlib")
+    set(PREFIX_PATH "C:/MinGW/msys/1.0/local/petlib")
   else()
-    set(PETLIB_PATH "/usr/local/petlib")
+    set(PREFIX_PATH "/usr/local/petlib")
   endif()
 endif()
 
 # if /usr/local/petlib is found use that one for install and search prefix
-if(EXISTS ${PETLIB_PATH})
-  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${PETLIB_PATH})
-  #if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-    set(CMAKE_INSTALL_PREFIX ${PETLIB_PATH})
-  #endif()
+if(EXISTS ${PREFIX_PATH})
+  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${PREFIX_PATH})
+  set(CMAKE_INSTALL_PREFIX ${PREFIX_PATH})
+else()
+  message("WARNING: selected PREFIX path '${PREFIX_PATH}' does not exist")
 endif()
+
+message("Using Search Path: ${CMAKE_PREFIX_PATH}")
+message("Using Install Prefix: ${CMAKE_INSTALL_PREFIX}")
 
 # Configure third party packages
 find_package(Threads REQUIRED)
+
+# select shared/static build
+set(STATIC_BUILD TRUE)
+set(SHARED_BUILD TRUE)
+
+# set _USE_MATH_DEFINES to have M_PI for Windows builds
+if(WIN32)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_USE_MATH_DEFINES")
+endif()
 
 # Set some better optimization options
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mtune=generic -std=c++11 -Wall -Wextra")

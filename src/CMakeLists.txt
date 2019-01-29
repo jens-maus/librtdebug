@@ -47,30 +47,42 @@ file(GLOB_RECURSE CODE_FILES *.cpp)
 
 # specify that we are creating a shared and static library at the
 # same time
-add_library(${CMAKE_PROJECT_NAME}-static STATIC ${CODE_FILES})
-add_library(${CMAKE_PROJECT_NAME}-shared SHARED ${CODE_FILES})
-set_target_properties(${CMAKE_PROJECT_NAME}-static PROPERTIES OUTPUT_NAME rtdebug 
-                                                              VERSION ${PROJECT_VERSION} 
-                                                              SOVERSION ${PROJECT_VERSION_MAJOR})
-set_target_properties(${CMAKE_PROJECT_NAME}-shared PROPERTIES OUTPUT_NAME rtdebug
-                                                              VERSION ${PROJECT_VERSION} 
-                                                              SOVERSION ${PROJECT_VERSION_MAJOR})
+if(STATIC_BUILD)
+  add_library(${CMAKE_PROJECT_NAME}-static STATIC ${CODE_FILES})
 
-# define link libraries dependencies
-target_link_libraries(${CMAKE_PROJECT_NAME}-static ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(${CMAKE_PROJECT_NAME}-shared ${CMAKE_THREAD_LIBS_INIT})
+  set_target_properties(${CMAKE_PROJECT_NAME}-static PROPERTIES OUTPUT_NAME rtdebug 
+                                                                VERSION ${PROJECT_VERSION} 
+                                                                SOVERSION ${PROJECT_VERSION_MAJOR})
 
-# definition of install targets
-install(TARGETS ${CMAKE_PROJECT_NAME}-static
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib
-        COMPONENT library
-)
-install(TARGETS ${CMAKE_PROJECT_NAME}-shared
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib
-        COMPONENT library
-)
+  # define link libraries dependencies
+  target_link_libraries(${CMAKE_PROJECT_NAME}-static ${CMAKE_THREAD_LIBS_INIT})
+
+  # definition of install targets
+  install(TARGETS ${CMAKE_PROJECT_NAME}-static
+          ARCHIVE DESTINATION lib
+          LIBRARY DESTINATION lib
+          COMPONENT library
+  )
+endif()
+
+if(SHARED_BUILD)
+  add_library(${CMAKE_PROJECT_NAME}-shared SHARED ${CODE_FILES})
+
+  set_target_properties(${CMAKE_PROJECT_NAME}-shared PROPERTIES OUTPUT_NAME rtdebug
+                                                                VERSION ${PROJECT_VERSION} 
+                                                                SOVERSION ${PROJECT_VERSION_MAJOR})
+
+  # define link libraries dependencies
+  target_link_libraries(${CMAKE_PROJECT_NAME}-shared ${CMAKE_THREAD_LIBS_INIT})
+
+  install(TARGETS ${CMAKE_PROJECT_NAME}-shared
+          ARCHIVE DESTINATION lib
+          LIBRARY DESTINATION lib
+          COMPONENT library
+  )
+endif()
+
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/rtdebug.h
               ${CMAKE_CURRENT_SOURCE_DIR}/CRTDebug.h
-              DESTINATION include/rtdebug)
+              DESTINATION include/rtdebug
+)

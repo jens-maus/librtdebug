@@ -27,9 +27,17 @@
 # # to explicitly compile for Windows-64bit
 # > make OS=w64
 #
-# # to compile for Linux-64bit but without debugging
-# > make OS=l32 DEBUG=
+# # to compile for Linux-32bit with debugging
+# > make OS=l32 DEBUG=1
 #
+# # to use a different search/install prefix
+# > make PREFIX=/usr/local
+#
+# # to enable verbose compile output
+# > make VERBOSE=1
+#
+# # to supply addition cmake options
+# > make CMAKE_OPTIONS=-DMYOPT=1
 
 #############################################
 # find out the HOST operating system
@@ -95,9 +103,24 @@ RMDIR   = rm -rf
 MKDIR   = mkdir -p
 
 # Common Directories
-PREFIX    = ./
-BUILDDIR  = $(PREFIX)build-$(OS)
+BUILDDIR  = build-$(OS)
 MXEDIR    = /usr/local/mxe
+
+# Common variables
+DEBUG     = 0
+CMAKE_OPT = $(CMAKE_OPTIONS) -DPREFIX_PATH=$(PREFIX)
+
+# check for debug option
+ifeq ($(DEBUG), 1)
+  CMAKE_OPT += -DCMAKE_BUILD_TYPE=Debug
+endif
+
+#############################################
+# for MacOSX we need to define where to find
+# the Qt5 framework
+ifeq ($(OS), m64)
+  CMAKE_OPT += -DQt5_DIR=/usr/local/Qt/lib/cmake/Qt5
+endif
 
 #############################################
 # lets identify if we are going to cross
@@ -105,9 +128,10 @@ MXEDIR    = /usr/local/mxe
 # the cmake call
 ifeq ($(OS), w64)
   ##############################
-  # Windows 64-bit static
+  # Windows 64-bit shared
   ifneq ($(HOST), Windows64)
-    TARGET_PATH = $(MXEDIR)/usr/x86_64-w64-mingw32.shared
+    CMAKE_OPT += -DCROSS_OS=$(OS)
+    CMAKE = $(MXEDIR)/usr/bin/x86_64-w64-mingw32.shared-cmake
   endif
 endif
 
@@ -115,15 +139,17 @@ ifeq ($(OS), w64s)
   ##############################
   # Windows 64-bit static
   ifneq ($(HOST), Windows64)
-    TARGET_PATH = $(MXEDIR)/usr/x86_64-w64-mingw32.static
+    CMAKE_OPT += -DCROSS_OS=$(OS)
+    CMAKE = $(MXEDIR)/usr/bin/x86_64-w64-mingw32.static-cmake
   endif
 endif
 
 ifeq ($(OS), w32)
   ##############################
-  # Windows 32-bit static
+  # Windows 32-bit shared
   ifneq ($(HOST), Windows64)
-    TARGET_PATH = $(MXEDIR)/usr/i686-w64-mingw32.shared
+    CMAKE_OPT += -DCROSS_OS=$(OS)
+    CMAKE = $(MXEDIR)/usr/bin/i686-w64-mingw32.shared-cmake
   endif
 endif
 
@@ -131,20 +157,15 @@ ifeq ($(OS), w32s)
   ##############################
   # Windows 32-bit static
   ifneq ($(HOST), Windows64)
-    TARGET_PATH = $(MXEDIR)/usr/i686-w64-mingw32.static
+    CMAKE_OPT += -DCROSS_OS=$(OS)
+    CMAKE = $(MXEDIR)/usr/bin/i686-w64-mingw32.static-cmake
   endif
 endif
 
 ifeq ($(OS), Windows_NT)
   ##############################
   # native MinGW build?
-  CMAKE_OPTIONS := -G"MSYS Makefiles"
-endif
-
-# depending on TARGET_PATH we enable cross compiling 
-# for cmake or not
-ifneq ($(TARGET_PATH),)
-  CMAKE_OPTIONS := -DCMAKE_TOOLCHAIN_FILE=$(TARGET_PATH)/share/cmake/mxe-conf.cmake -DCROSS_OS=$(OS)
+  CMAKE_OPT += -G"MSYS Makefiles"
 endif
 
 ###################
@@ -161,7 +182,7 @@ $(BUILDDIR):
 .NOTPARALLEL: $(BUILDDIR)/Makefile
 $(BUILDDIR)/Makefile:
 	@echo "  CMAKE $@"
-	@(cd $(BUILDDIR) ; $(CMAKE) $(CMAKE_OPTIONS) ..)
+	@(cd $(BUILDDIR) ; $(CMAKE) $(CMAKE_OPT) ..)
 
 .PHONY: build
 .NOTPARALLEL: build
@@ -190,4 +211,4 @@ cleanall:
 .PHONY: distclean
 distclean:
 	@echo "  DISTCLEAN"
-	@$(RMDIR) $(PREFIX)build-*
+	@$(RMDIR) ./build-*
