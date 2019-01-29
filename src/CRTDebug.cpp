@@ -1251,18 +1251,21 @@ void CRTDebug::printf(const int c, const char* m, const char* file,
   // known one for which we have assigned an own ID
   THREAD_ID_CHECK;
 
+  // output different prefixes depending on the info class
+  const char* highlight;
+  const char* prefix;
+  switch(c)
+  {
+    case INC_DEBUG:   highlight = DBC_DEBUG_COLOR;   prefix = "DEBUG: ";   break;
+    case INC_ERROR:   highlight = DBC_ERROR_COLOR;   prefix = "ERROR: ";   break;
+    case INC_FATAL:   highlight = DBC_ERROR_COLOR;   prefix = "FATAL: ";   break;
+    case INC_WARNING: highlight = DBC_WARNING_COLOR; prefix = "WARNING: "; break;
+    case INC_VERBOSE: highlight = ANSI_ESC_FG_WHITE; prefix = ""; break;
+    default:          highlight = ""; prefix = "";  break;
+  }
+
   if(m_pData->m_bHighlighting)
   {
-    const char *highlight;
-    switch(c)
-    {
-      case INC_DEBUG:   highlight = DBC_DEBUG_COLOR;    break;
-      case INC_ERROR:   highlight = DBC_ERROR_COLOR;    break;
-      case INC_FATAL:   highlight = DBC_ERROR_COLOR;    break;
-      case INC_WARNING: highlight = DBC_WARNING_COLOR;  break;
-      default:          highlight = ANSI_ESC_FG_WHITE;  break;
-    }
-
     if(file != NULL)
     {
       std::cout << TIME_PREFIX_COLOR
@@ -1270,12 +1273,14 @@ void CRTDebug::printf(const int c, const char* m, const char* file,
                 << INDENT_OUTPUT << highlight
                 << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
                 << ":" << std::dec << line << ":"
+                << prefix
                 << buf << ANSI_ESC_CLR
                 << std::endl;
     }
     else
     {
       std::cout << highlight
+                << prefix
                 << buf << ANSI_ESC_CLR 
                 << std::endl;
     }
@@ -1291,7 +1296,9 @@ void CRTDebug::printf(const int c, const char* m, const char* file,
                 << ":" << std::dec << line << ":";
     }
     
-    std::cout << buf << std::endl;
+    std::cout << prefix
+              << buf
+              << std::endl;
   }
 
   // unlock the output stream
