@@ -22,6 +22,8 @@
 #ifndef CRTDEBUG_H
 #define CRTDEBUG_H
 
+#include <iostream>
+
 // debug classes
 #define DBC_CTRACE    (1<<0) // call tracing (ENTER/LEAVE etc.)
 #define DBC_REPORT    (1<<1) // reports (SHOWVALUE/SHOWSTRING etc.)
@@ -108,19 +110,19 @@ class CRTDebug
     static void init(const char* variable=0, const bool debugMode=false);
 
     // our main debug output methods
-    void Enter(const int c, const char* m, const char* file, long line, const char* function);
-    void Leave(const int c, const char* m, const char* file, int line, const char* function);
-    void Return(const int c, const char* m, const char* file, int line, const char* function, long result);
-    void ShowValue(const int c, const char* m, long long value, int size, const char* name, const char* file, long line);
-    void ShowPointer(const int c, const char* m, void* pointer, const char* name, const char* file, long line);
-    void ShowString(const int c, const char* m, const char* string, const char* name, const char* file, long line);
-    void ShowMessage(const int c, const char* m, const char* string, const char* file, long line);
-    void StartClock(const int c, const char* m, const char* string, const char* file, long line);
-    void StopClock(const int c, const char* m, const char* string, const char* file, long line);
+    std::ostream& Enter(const int c, const char* m, const char* file, long line, const char* function);
+    std::ostream& Leave(const int c, const char* m, const char* file, int line, const char* function);
+    std::ostream& Return(const int c, const char* m, const char* file, int line, const char* function, long result);
+    std::ostream& ShowValue(const int c, const char* m, long long value, int size, const char* name, const char* file, long line);
+    std::ostream& ShowPointer(const int c, const char* m, void* pointer, const char* name, const char* file, long line);
+    std::ostream& ShowString(const int c, const char* m, const char* string, const char* name, const char* file, long line);
+    std::ostream& ShowMessage(const int c, const char* m, const char* string, const char* file, long line);
+    std::ostream& StartClock(const int c, const char* m, const char* string, const char* file, long line);
+    std::ostream& StopClock(const int c, const char* m, const char* string, const char* file, long line);
 
     // some raw methods to format text like printf() does
-    void dprintf(const int c, const char* m, const char* file, long line, const char* fmt, ...);
-    void printf(const int c, const char* m, const char* file, long line, const char* fmt, ...);
+    std::ostream& dprintf(const int c, const char* m, const char* file, long line, const char* fmt, ...);
+    std::ostream& printf(const int c, const char* m, const char* file, long line, const char* fmt, ...);
 
     // general public methods to control debug class
     unsigned int debugClasses() const;

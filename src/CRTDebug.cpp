@@ -93,7 +93,7 @@
 #if defined(HAVE_GETTIMEOFDAY)
 #define GET_TIMEINFO(tp) \
   if(gettimeofday((tp), NULL) != 0) \
-    return
+    return std::cerr
 #elif defined(HAVE_GETTICKCOUNT)
 #define GET_TIMEINFO(tp) \
   (tp)->tv_sec = GetTickCount() / MILLISEC; \
@@ -543,12 +543,12 @@ CRTDebug::~CRTDebug()
 //! @param       line the line number on which the ENTER() was placed
 //! @param       function name of the function in which the ENTER() was placed.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::Enter(const int c, const char* m, const char* file, long line,
-                     const char* function)
+std::ostream& CRTDebug::Enter(const int c, const char* m, const char* file, long line,
+                              const char* function)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
-    return;
+    return std::cerr;
 
   // lock the output stream
   LOCK_OUTPUTSTREAM;
@@ -583,6 +583,8 @@ void CRTDebug::Enter(const int c, const char* m, const char* file, long line,
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
+
+  return std::cerr;
 }
 
 //  Class:       CRTDebug
@@ -599,12 +601,12 @@ void CRTDebug::Enter(const int c, const char* m, const char* file, long line,
 //! @param       line the line number on which the LEAVE() was placed
 //! @param       function name of the function in which the LEAVE() was placed.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
-                     const char *function)
+std::ostream& CRTDebug::Leave(const int c, const char* m, const char *file, int line,
+                              const char *function)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
-    return;
+    return std::cerr;
 
   // lock the output stream
   LOCK_OUTPUTSTREAM;
@@ -639,6 +641,8 @@ void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
+
+  return std::cerr;
 }
 
 //  Class:       CRTDebug
@@ -656,12 +660,12 @@ void CRTDebug::Leave(const int c, const char* m, const char *file, int line,
 //! @param       function name of the function in which the RETURN() was placed.
 //! @param       return the return value
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::Return(const int c, const char* m, const char *file, int line,
-                      const char *function, long result)
+std::ostream& CRTDebug::Return(const int c, const char* m, const char *file, int line,
+                               const char *function, long result)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
-    return;
+    return std::cerr;
 
   // lock the output stream
   LOCK_OUTPUTSTREAM;
@@ -699,6 +703,8 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
+
+  return std::cerr;
 }
 
 //  Class:       CRTDebug
@@ -718,12 +724,12 @@ void CRTDebug::Return(const int c, const char* m, const char *file, int line,
 //! @param       file   the file name of the source code where we placed SHOWVALUE()
 //! @param       line   the line number on which the SHOWVALUE() is.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::ShowValue(const int c, const char* m, long long value, int size,
-                         const char *name, const char *file, long line)
+std::ostream& CRTDebug::ShowValue(const int c, const char* m, long long value, int size,
+                                  const char *name, const char *file, long line)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
-    return;
+    return std::cerr;
 
   // lock the output stream
   LOCK_OUTPUTSTREAM;
@@ -776,6 +782,8 @@ void CRTDebug::ShowValue(const int c, const char* m, long long value, int size,
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
+
+  return std::cerr;
 }
 
 //  Class:       CRTDebug
@@ -792,12 +800,12 @@ void CRTDebug::ShowValue(const int c, const char* m, long long value, int size,
 //! @param       file     the file name of the source we have the SHOWPOINTER()
 //! @param       line     the line number on which the SHOWPOINTER() is.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
-                           const char* name, const char* file, long line)
+std::ostream& CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
+                                    const char* name, const char* file, long line)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
-    return;
+    return std::cerr;
 
   // lock the output stream
   LOCK_OUTPUTSTREAM;
@@ -838,6 +846,8 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
+
+  return std::cerr;
 }
 
 //  Class:       CRTDebug
@@ -857,12 +867,12 @@ void CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
 //! @param       file   the file name were the SHOWSTRING() is
 //! @param       line   the line number on which the SHOWSTRING() is
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::ShowString(const int c, const char* m, const char* string,
-                          const char* name, const char* file, long line)
+std::ostream& CRTDebug::ShowString(const int c, const char* m, const char* string,
+                                   const char* name, const char* file, long line)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
-    return;
+    return std::cerr;
 
   // lock the output stream
   LOCK_OUTPUTSTREAM;
@@ -897,6 +907,8 @@ void CRTDebug::ShowString(const int c, const char* m, const char* string,
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
+
+  return std::cerr;
 }
 
 //  Class:       CRTDebug
@@ -913,12 +925,12 @@ void CRTDebug::ShowString(const int c, const char* m, const char* string,
 //! @param       file   the filename of the source
 //! @param       line   the line number where we have placed the SHOWMSG()
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::ShowMessage(const int c, const char* m, const char* string,
-                           const char* file, long line)
+std::ostream& CRTDebug::ShowMessage(const int c, const char* m, const char* string,
+                                    const char* file, long line)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
-    return;
+    return std::cerr;
 
   // lock the output stream
   LOCK_OUTPUTSTREAM;
@@ -950,6 +962,8 @@ void CRTDebug::ShowMessage(const int c, const char* m, const char* string,
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
+
+  return std::cerr;
 }
 
 //  Class:       CRTDebug
@@ -968,12 +982,12 @@ void CRTDebug::ShowMessage(const int c, const char* m, const char* string,
 //! @param       file   the filename of the source code
 //! @param       line   the line number on which we have the STARTCLOCK()
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::StartClock(const int c, const char* m, const char* string,
-                          const char* file, long line)
+std::ostream& CRTDebug::StartClock(const int c, const char* m, const char* string,
+                                   const char* file, long line)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
-    return;
+    return std::cerr;
 
   // lock the output stream
   LOCK_OUTPUTSTREAM;
@@ -1026,6 +1040,8 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
+
+  return std::cerr;
 }
 
 //  Class:       CRTDebug
@@ -1043,12 +1059,12 @@ void CRTDebug::StartClock(const int c, const char* m, const char* string,
 //! @param       file   the filename of the source code file
 //! @param       line   the line number on which we placed the STOPCLOCK()
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::StopClock(const int c, const char* m, const char* string,
-                         const char* file, long line)
+std::ostream& CRTDebug::StopClock(const int c, const char* m, const char* string,
+                                  const char* file, long line)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
-    return;
+    return std::cerr;
 
   // lock the output stream
   LOCK_OUTPUTSTREAM;
@@ -1116,6 +1132,8 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
+
+  return std::cerr;
 }
 
 //  Class:       CRTDebug
@@ -1135,12 +1153,12 @@ void CRTDebug::StopClock(const int c, const char* m, const char* string,
 //! @param       fmt  the format string
 //! @param       ...  a vararg list of parameters.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::dprintf(const int c, const char* m, const char* file,
-                       long line, const char* fmt, ...)
+std::ostream& CRTDebug::dprintf(const int c, const char* m, const char* file,
+                                long line, const char* fmt, ...)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
-    return;
+    return std::cerr;
 
   // lock the output stream
   LOCK_OUTPUTSTREAM;
@@ -1155,10 +1173,10 @@ void CRTDebug::dprintf(const int c, const char* m, const char* file,
   char *buf;
   #if defined(HAVE_VASPRINTF)
   if(vasprintf(&buf, fmt, args) == -1)
-    return;
+    return std::cerr;
   #else
   if((buf = (char *)malloc(STRINGSIZE)) == NULL)
-    return;
+    return std::cerr;
   vsnprintf(buf, STRINGSIZE, fmt, args);
   #endif
   va_end(args);
@@ -1200,6 +1218,8 @@ void CRTDebug::dprintf(const int c, const char* m, const char* file,
 
   // free the memory vasprintf() allocated for us
   free(buf);
+
+  return std::cerr;
 }
 
 //  Class:       CRTDebug
@@ -1219,12 +1239,12 @@ void CRTDebug::dprintf(const int c, const char* m, const char* file,
 //! @param       fmt  the format string
 //! @param       ...  a vararg list of parameters.
 ////////////////////////////////////////////////////////////////////////////////
-void CRTDebug::printf(const int c, const char* m, const char* file,
-                      long line, const char* fmt, ...)
+std::ostream& CRTDebug::printf(const int c, const char* m, const char* file,
+                               long line, const char* fmt, ...)
 {
   // check if we should really output something
   if(m_pData->matchInfoSpec(c, m, file) == false)
-    return;
+    return std::cout;
 
   // lock the output stream
   LOCK_OUTPUTSTREAM;
@@ -1239,10 +1259,10 @@ void CRTDebug::printf(const int c, const char* m, const char* file,
   char *buf;
   #if defined(HAVE_VASPRINTF)
   if(vasprintf(&buf, fmt, args) == -1)
-    return;
+    return std::cout;
   #else
   if((buf = (char *)malloc(STRINGSIZE)) == NULL)
-    return;
+    return std::cout;
   vsnprintf(buf, STRINGSIZE, fmt, args);
   #endif
   va_end(args);
@@ -1254,51 +1274,52 @@ void CRTDebug::printf(const int c, const char* m, const char* file,
   // output different prefixes depending on the info class
   const char* highlight;
   const char* prefix;
+  std::ostream* stream = nullptr;
   switch(c)
   {
-    case INC_DEBUG:   highlight = DBC_DEBUG_COLOR;   prefix = "DEBUG: ";   break;
-    case INC_ERROR:   highlight = DBC_ERROR_COLOR;   prefix = "ERROR: ";   break;
-    case INC_FATAL:   highlight = DBC_ERROR_COLOR;   prefix = "FATAL: ";   break;
-    case INC_WARNING: highlight = DBC_WARNING_COLOR; prefix = "WARNING: "; break;
-    case INC_VERBOSE: highlight = ANSI_ESC_FG_WHITE; prefix = ""; break;
-    default:          highlight = ""; prefix = "";  break;
+    case INC_DEBUG:   highlight = DBC_DEBUG_COLOR;   prefix = "DEBUG: ";   stream = &std::cerr; break;
+    case INC_ERROR:   highlight = DBC_ERROR_COLOR;   prefix = "ERROR: ";   stream = &std::cerr; break;
+    case INC_FATAL:   highlight = DBC_ERROR_COLOR;   prefix = "FATAL: ";   stream = &std::cerr; break;
+    case INC_WARNING: highlight = DBC_WARNING_COLOR; prefix = "WARNING: "; stream = &std::cerr; break;
+    case INC_VERBOSE: highlight = ANSI_ESC_FG_WHITE; prefix = ""; stream = &std::cout; break;
+    default:          highlight = ""; prefix = "";  stream = &std::cout; break;
   }
 
   if(m_pData->m_bHighlighting)
   {
     if(file != NULL)
     {
-      std::cout << TIME_PREFIX_COLOR
-                << THREAD_PREFIX_COLOR
-                << INDENT_OUTPUT << highlight
-                << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
-                << ":" << std::dec << line << ":"
-                << prefix
-                << buf << ANSI_ESC_CLR
-                << std::endl;
+      *stream << TIME_PREFIX_COLOR
+              << THREAD_PREFIX_COLOR
+              << INDENT_OUTPUT << highlight
+              << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
+              << ":" << std::dec << line << ":"
+              << prefix
+              << buf << ANSI_ESC_CLR
+              << std::endl;
     }
     else
     {
-      std::cout << highlight
-                << prefix
-                << buf << ANSI_ESC_CLR 
-                << std::endl;
+      *stream << highlight
+              << prefix
+              << buf << ANSI_ESC_CLR 
+              << std::endl;
     }
   }
   else
   {
     if(file != NULL)
     {
-      std::cout << TIME_PREFIX
-                << THREAD_PREFIX
-                << INDENT_OUTPUT
-                << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
-                << ":" << std::dec << line << ":";
+      *stream << TIME_PREFIX
+              << THREAD_PREFIX
+              << INDENT_OUTPUT
+              << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
+              << ":" << std::dec << line << ":";
     }
     
-    std::cout << prefix
-              << buf
-              << std::endl;
+    *stream << prefix
+            << buf
+            << std::endl;
   }
 
   // unlock the output stream
@@ -1306,6 +1327,16 @@ void CRTDebug::printf(const int c, const char* m, const char* file,
 
   // free the memory vasprintf() allocated for us
   free(buf);
+
+  // abort anything that follows if this is a Fatal()
+  // call
+  if(c == INC_FATAL)
+  {
+    *stream << std::flush;
+    abort();
+  }
+
+  return *stream;
 }
 
 unsigned int CRTDebug::debugClasses() const
