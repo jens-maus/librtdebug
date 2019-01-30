@@ -1360,6 +1360,58 @@ const char* CRTDebug::debugModules() const
   return result.c_str();
 }
 
+unsigned int CRTDebug::infoClasses() const
+{
+  return m_pData->m_iInfoClasses;
+}
+
+unsigned int CRTDebug::infoFlags() const
+{
+  return m_pData->m_iInfoFlags;
+}
+
+const char* CRTDebug::infoFiles() const
+{
+  std::string result;
+  std::map<std::string, bool>::iterator it = m_pData->m_InfoFiles.begin();
+
+  while(it != m_pData->m_InfoFiles.end())
+  {
+    if(it != m_pData->m_InfoFiles.begin())
+      result += " ";
+
+    if((*it).second == true)
+      result += (*it).first;
+    else
+      result += "!" + (*it).first;
+
+    ++it;
+  }
+
+  return result.c_str();
+}
+
+const char* CRTDebug::infoModules() const
+{
+  std::string result;
+  std::map<std::string, bool>::iterator it = m_pData->m_InfoModules.begin();
+
+  while(it != m_pData->m_InfoModules.end())
+  {
+    if(it != m_pData->m_InfoModules.begin())
+      result += " ";
+
+    if((*it).second == true)
+      result += (*it).first;
+    else
+      result += "!" + (*it).first;
+
+    ++it;
+  }
+
+  return result.c_str();
+}
+
 bool CRTDebug::highlighting() const
 {
   return m_pData->m_bHighlighting;
@@ -1415,6 +1467,58 @@ void CRTDebug::clearDebugFile(const char* filename)
 void CRTDebug::clearDebugModule(const char* module)
 {
   m_pData->m_DebugModules.erase(module);
+}
+
+void CRTDebug::setInfoClass(unsigned int cl)
+{
+  m_pData->m_iInfoClasses |= cl;
+}
+
+void CRTDebug::setInfoFlag(unsigned int fl)
+{
+  m_pData->m_iInfoFlags |= fl;
+}
+
+void CRTDebug::setInfoFile(const char* filename, bool show)
+{
+  // convert the C-string to an STL std::string
+  std::string token = filename;
+  std::transform(token.begin(),
+                 token.end(),
+                 token.begin(), tolower);
+
+  m_pData->m_InfoFiles[token] = show;
+}
+
+void CRTDebug::setInfoModule(const char* module, bool show)
+{
+  // convert the C-string to an STL std::string
+  std::string token = module;
+  std::transform(token.begin(),
+                 token.end(),
+                 token.begin(), tolower);
+
+  m_pData->m_InfoModules[token] = show;
+}
+
+void CRTDebug::clearInfoClass(unsigned int cl)
+{
+  m_pData->m_iInfoClasses &= ~cl;
+}
+
+void CRTDebug::clearInfoFlag(unsigned int fl)
+{
+  m_pData->m_iInfoFlags &= ~fl;
+}
+
+void CRTDebug::clearInfoFile(const char* filename)
+{
+  m_pData->m_InfoFiles.erase(filename);
+}
+
+void CRTDebug::clearInfoModule(const char* module)
+{
+  m_pData->m_InfoModules.erase(module);
 }
 
 void CRTDebug::setHighlighting(bool on)

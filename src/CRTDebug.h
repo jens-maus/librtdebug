@@ -136,6 +136,20 @@ class CRTDebug
     void clearDebugFile(const char* filename);
     void clearDebugModule(const char* module);
 
+    // general public methods to control info class
+    unsigned int infoClasses() const;
+    unsigned int infoFlags() const;
+    const char* infoFiles() const;
+    const char* infoModules() const;
+    void setInfoClass(unsigned int cl);
+    void setInfoFlag(unsigned int fl);
+    void setInfoFile(const char* filename, bool show);
+    void setInfoModule(const char* module, bool show);
+    void clearInfoClass(unsigned int cl);
+    void clearInfoFlag(unsigned int fl);
+    void clearInfoFile(const char* filename);
+    void clearInfoModule(const char* module);
+
     // methods to control additional options
     bool highlighting() const;
     void setHighlighting(bool on);
