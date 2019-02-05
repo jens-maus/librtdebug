@@ -629,7 +629,7 @@ std::ostream& CRTDebug::Enter(const int c, const char* m, const char* file, long
 //! @param       line the line number on which the LEAVE() was placed
 //! @param       function name of the function in which the LEAVE() was placed.
 ////////////////////////////////////////////////////////////////////////////////
-std::ostream& CRTDebug::Leave(const int c, const char* m, const char *file, int line,
+std::ostream& CRTDebug::Leave(const int c, const char* m, const char *file, const long line,
                               const char *function)
 {
   // check if we should really output something
@@ -688,8 +688,8 @@ std::ostream& CRTDebug::Leave(const int c, const char* m, const char *file, int 
 //! @param       function name of the function in which the RETURN() was placed.
 //! @param       return the return value
 ////////////////////////////////////////////////////////////////////////////////
-std::ostream& CRTDebug::Return(const int c, const char* m, const char *file, int line,
-                               const char *function, long result)
+std::ostream& CRTDebug::Return(const int c, const char* m, const char *file, const long line,
+                               const char *function, const long result)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
@@ -828,8 +828,8 @@ std::ostream& CRTDebug::ShowValue(const int c, const char* m, long long value, i
 //! @param       file     the file name of the source we have the SHOWPOINTER()
 //! @param       line     the line number on which the SHOWPOINTER() is.
 ////////////////////////////////////////////////////////////////////////////////
-std::ostream& CRTDebug::ShowPointer(const int c, const char* m, void* pointer,
-                                    const char* name, const char* file, long line)
+std::ostream& CRTDebug::ShowPointer(const int c, const char* m, const void* pointer,
+                                    const char* name, const char* file, const long line)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
@@ -1174,15 +1174,16 @@ std::ostream& CRTDebug::StopClock(const int c, const char* m, const char* string
 //! This method is invoked by the D() E() and W() macros to output a simple string
 //! within a predefined debugging class and group.
 //!
-//! @param       c    the debug class on which the output should be done.
-//! @param       g    the debug group in which this message belongs.
-//! @param       file the filename of the source file.
-//! @param       line the line number on which the macro was placed
-//! @param       fmt  the format string
-//! @param       ...  a vararg list of parameters.
+//! @param  c        the debug class on which the output should be done.
+//! @param  g        the debug group in which this message belongs.
+//! @param  file     the filename of the source file.
+//! @param  line     the line number on which the macro was placed
+//! @param  newline  a newline will be added at the end
+//! @param  fmt      the format string
+//! @param  ...      a vararg list of parameters.
 ////////////////////////////////////////////////////////////////////////////////
 std::ostream& CRTDebug::dprintf(const int c, const char* m, const char* file,
-                                long line, const char* fmt, ...)
+                                const long line, const bool newline, const char* fmt, ...)
 {
   // check if we should really output something
   if(m_pData->matchDebugSpec(c, m, file) == false)
@@ -1228,8 +1229,7 @@ std::ostream& CRTDebug::dprintf(const int c, const char* m, const char* file,
               << THREAD_PREFIX_COLOR
               << INDENT_OUTPUT << highlight
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
-              << ":" << std::dec << line << ":" << buf << ANSI_ESC_CLR
-              << std::endl;
+              << ":" << std::dec << line << ":" << buf << ANSI_ESC_CLR;
   }
   else
   {
@@ -1237,9 +1237,14 @@ std::ostream& CRTDebug::dprintf(const int c, const char* m, const char* file,
               << THREAD_PREFIX
               << INDENT_OUTPUT
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
-              << ":" << std::dec << line << ":" << buf
-              << std::endl;
+              << ":" << std::dec << line << ":" << buf;
   }
+
+  // output a newline if wanted
+  if(newline == true)
+    std::cerr << std::endl;
+  else
+    std::cerr << std::flush;
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
@@ -1260,15 +1265,16 @@ std::ostream& CRTDebug::dprintf(const int c, const char* m, const char* file,
 //! This method is invoked by the D() E() and W() macros to output a simple string
 //! within a predefined debugging class and group.
 //!
-//! @param       c    the debug class on which the output should be done.
-//! @param       g    the debug group in which this message belongs.
-//! @param       file the filename of the source file.
-//! @param       line the line number on which the macro was placed
-//! @param       fmt  the format string
-//! @param       ...  a vararg list of parameters.
+//! @param  c        the debug class on which the output should be done.
+//! @param  g        the debug group in which this message belongs.
+//! @param  file     the filename of the source file.
+//! @param  line     the line number on which the macro was placed
+//! @param  newline  a newline will be added at the end
+//! @param  fmt      the format string
+//! @param  ...      a vararg list of parameters.
 ////////////////////////////////////////////////////////////////////////////////
 std::ostream& CRTDebug::printf(const int c, const char* m, const char* file,
-                               long line, const char* fmt, ...)
+                               const long line, const bool newline, const char* fmt, ...)
 {
   // check if we should really output something
   if(m_pData->matchInfoSpec(c, m, file) == false)
@@ -1309,8 +1315,8 @@ std::ostream& CRTDebug::printf(const int c, const char* m, const char* file,
     case INC_ERROR:   highlight = DBC_ERROR_COLOR;   prefix = "ERROR: ";   stream = &std::cerr; break;
     case INC_FATAL:   highlight = DBC_ERROR_COLOR;   prefix = "FATAL: ";   stream = &std::cerr; break;
     case INC_WARNING: highlight = DBC_WARNING_COLOR; prefix = "WARNING: "; stream = &std::cerr; break;
-    case INC_VERBOSE: highlight = ANSI_ESC_FG_WHITE; prefix = ""; stream = &std::cout; break;
-    default:          highlight = ""; prefix = "";  stream = &std::cout; break;
+    case INC_VERBOSE: highlight = ""; prefix = ""; stream = &std::cout; break;
+    default:          highlight = ""; prefix = ""; stream = &std::cout; break;
   }
 
   if(m_pData->m_bHighlighting)
@@ -1323,15 +1329,13 @@ std::ostream& CRTDebug::printf(const int c, const char* m, const char* file,
               << (strrchr(file, '/') ? strrchr(file, '/')+1 : file)
               << ":" << std::dec << line << ":"
               << prefix
-              << buf << ANSI_ESC_CLR
-              << std::endl;
+              << buf << ANSI_ESC_CLR;
     }
     else
     {
       *stream << highlight
               << prefix
-              << buf << ANSI_ESC_CLR 
-              << std::endl;
+              << buf << ANSI_ESC_CLR;
     }
   }
   else
@@ -1346,9 +1350,14 @@ std::ostream& CRTDebug::printf(const int c, const char* m, const char* file,
     }
     
     *stream << prefix
-            << buf
-            << std::endl;
+            << buf;
   }
+
+  // output a newline if wanted
+  if(newline == true)
+    *stream << std::endl;
+  else
+    *stream << std::flush;
 
   // unlock the output stream
   UNLOCK_OUTPUTSTREAM;
@@ -1359,10 +1368,7 @@ std::ostream& CRTDebug::printf(const int c, const char* m, const char* file,
   // abort anything that follows if this is a Fatal()
   // call
   if(c == INC_FATAL)
-  {
-    *stream << std::flush;
     abort();
-  }
 
   return *stream;
 }
