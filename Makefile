@@ -39,6 +39,8 @@
 # # to supply addition cmake options
 # > make CMAKE_OPTIONS=-DMYOPT=1
 
+VERSION=2.2.0
+
 #############################################
 # find out the HOST operating system
 # on which this makefile is run
@@ -108,7 +110,7 @@ MXEDIR    = /usr/local/mxe
 
 # Common variables
 DEBUG     = 0
-CMAKE_OPT = $(CMAKE_OPTIONS) -DPREFIX_PATH=$(PREFIX)
+CMAKE_OPT = $(CMAKE_OPTIONS) -DPREFIX_PATH=$(PREFIX) -DPKG_VERSION=$(VERSION)
 
 # check for debug option
 ifeq ($(DEBUG), 1)
@@ -195,6 +197,12 @@ build:
 install:
 	@echo "  INSTALL $(BUILDDIR)"
 	@$(MAKE) -C $(BUILDDIR) install
+
+# conda target
+.PHONY: conda
+conda:
+	@echo "  CONDA BUILD"
+	@PROJECT_VERSION=$(VERSION) conda mambabuild -c conda-forge conda.recipe
 
 # cleanup target
 .PHONY: clean

@@ -19,7 +19,7 @@
 #
 #***************************************************************************/
 
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.12.0)
 
 # Default configuration values. These must be before the project command or
 # they won't work in Windows.
@@ -31,12 +31,8 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 # define the project and the version number
-project(librtdebug)
+project(librtdebug VERSION ${PKG_VERSION})
 set(PROJECT_LONGNAME "librtdebug")
-set(PROJECT_VERSION_MAJOR 2)
-set(PROJECT_VERSION_MINOR 2)
-set(PROJECT_VERSION_PATCH 0)
-set(PROJECT_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
 
 # change output directory to top-level 'bin' dir.
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

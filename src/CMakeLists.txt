@@ -57,7 +57,7 @@ if(STATIC_BUILD)
                                                                 SOVERSION ${PROJECT_VERSION_MAJOR})
 
   # define link libraries dependencies
-  target_link_libraries(${CMAKE_PROJECT_NAME}-static ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(${CMAKE_PROJECT_NAME}-static)
 
   # definition of install targets
   install(TARGETS ${CMAKE_PROJECT_NAME}-static
@@ -75,7 +75,7 @@ if(SHARED_BUILD)
                                                                 SOVERSION ${PROJECT_VERSION_MAJOR})
 
   # define link libraries dependencies
-  target_link_libraries(${CMAKE_PROJECT_NAME}-shared ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(${CMAKE_PROJECT_NAME}-shared)
 
   install(TARGETS ${CMAKE_PROJECT_NAME}-shared
           ARCHIVE DESTINATION lib

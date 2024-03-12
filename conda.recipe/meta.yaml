@@ -1,0 +1,27 @@
+package:
+  name: librtdebug
+  version: {{ environ["PROJECT_VERSION"] }}
+
+source:
+  path: ..
+
+requirements:
+  build:
+    - cmake
+
+  run:
+    - libstdcxx-ng
+    - libgcc-ng
+
+build:
+
+  # already linked relative to $ORIGIN, so we need to turn
+  # off conda's relocation mechanism because it screws it up
+  binary_relocation: false
+
+about:
+  summary: 'RTDebug library'
+  desription: |
+    librtdebug library
+  home: https://github.com/jens-maus/librtdebug
+  license: LGPL
