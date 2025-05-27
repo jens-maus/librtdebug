@@ -63,6 +63,7 @@ if(STATIC_BUILD)
   install(TARGETS ${CMAKE_PROJECT_NAME}-static
           ARCHIVE DESTINATION lib
           LIBRARY DESTINATION lib
+          RUNTIME DESTINATION bin
           COMPONENT library
   )
 endif()
@@ -80,6 +81,7 @@ if(SHARED_BUILD)
   install(TARGETS ${CMAKE_PROJECT_NAME}-shared
           ARCHIVE DESTINATION lib
           LIBRARY DESTINATION lib
+          RUNTIME DESTINATION bin
           COMPONENT library
   )
 endif()
