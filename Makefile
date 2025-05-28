@@ -39,8 +39,6 @@
 # # to supply addition cmake options
 # > make CMAKE_OPTIONS=-DMYOPT=1
 
-VERSION=2.2.0
-
 #############################################
 # find out the HOST operating system
 # on which this makefile is run
@@ -110,7 +108,7 @@ MXEDIR    = /usr/local/mxe
 
 # Common variables
 DEBUG     = 0
-CMAKE_OPT = $(CMAKE_OPTIONS) -DPREFIX_PATH=$(PREFIX) -DPKG_VERSION=$(VERSION)
+CMAKE_OPT = $(CMAKE_OPTIONS) -DPREFIX_PATH=$(PREFIX)
 
 # check for debug option
 ifeq ($(DEBUG), 1)

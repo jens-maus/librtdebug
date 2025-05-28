@@ -31,6 +31,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 # define the project and the version number
+set(PKG_VERSION 2.2.0)
 project(librtdebug VERSION ${PKG_VERSION})
 set(PROJECT_LONGNAME "librtdebug")
 
